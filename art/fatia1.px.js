@@ -2,18 +2,7 @@
 // Rebuild: node ~/.claude/skills/pxl-pixel-art/bin/pxl.js build art/fatia1.px.js
 // Estações: 32×32 com contorno. Ícones: 16×16 com contorno.
 
-pal({
-  k: "#1b1618", // contorno / carvão do GDD
-  d: "#2e2a30", s: "#5b5662", S: "#8a8592", w: "#c9c3cc", // aço
-  p: "#3e3539", P: "#6b6066", Q: "#948790",               // pedra
-  b: "#4a2f22", B: "#7a4e2e", t: "#a8743f",               // madeira
-  e: "#5e3428", E: "#8a4a34", F: "#a9634a",               // tijolo
-  m: "#8f4a2a", M: "#c7743f",                             // minério de ferro (ferrugem)
-  c: "#241f22", C: "#3d3437",                             // carvão
-  r: "#b8401f", o: "#f29a3a", y: "#ffd47a", W: "#fff3d0", // fogo / brasa
-  h: "#8a5a1a", g: "#d9a441", G: "#f5d070",               // ouro
-})
-ramps("kdsSw", "kpPQ", "kbBt", "keEF", "kmM", "kcC", "roW", "hgG")
+include("paleta.px.js")
 
 // ---------- Mina ----------
 sprite("mina", { w: 30, h: 30, outline: "k" },

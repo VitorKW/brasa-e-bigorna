@@ -85,14 +85,15 @@
 | Produção da carvoaria | `0,5 × n × marco(n)` carvão/s |
 | Custo da fornalha | `50 × 1,18^n` |
 | Velocidade da fornalha | `0,25 × (1 + 0,15 × (n − 1)) × marco(n)` lingote/s |
-| Custo da bigorna | `200 × 1,2^n` |
-| Tempo de forja do item | `base × 0,92^(n−1)`; espada 3 lingotes/10 s, escudo 4/12 s, armadura 6/20 s |
-| Valor de venda do item | `valorBase × multQualidade × multMaterial`; espada 25, escudo 30, armadura 50; ferro ×1, aço ×4 |
+| Custo da bigorna | `200 × 1,2^n` para n ≥ 1; o desbloqueio (nível 0 → 1) custa **500**. *Ajustado pelo sim: com 200 a bigorna saía em 3 min, abaixo da meta de ~5 min; com 500 sai em 5 min* |
+| Tempo de forja do item | `base × 0,92^(n−1)`; espada 3 lingotes/10 s, machado 3/10 s `[suposição]`, escudo 4/12 s, elmo 4/12 s `[suposição]`, armadura 6/20 s |
+| Valor de venda do item | `valorBase × multQualidade × multMaterial`; espada 25, escudo 30, armadura 50, machado 25 `[suposição]`, elmo 30 `[suposição]`; ferro ×1, aço ×4 |
 | Custo de contratar ferreiro | `100 × 4^k` (k = ferreiros já contratados) |
-| XP do ferreiro | 1 XP por item forjado; próximo nível em `10 × 1,3^(n−1)` |
+| XP do ferreiro | 1 XP por item forjado na bigorna; na fornalha, 1 XP por 10 lingotes; na carvoaria, 1 por 20 carvões; na mina, 1 por 40 minérios `[suposição]` (divisores para os níveis subirem num ritmo parecido, ~1 XP/10 s no começo). Próximo nível em `10 × 1,3^(n−1)` |
 | XP do herói (n → n+1) | `50 × 1,25^(n−1)` |
 | Poder base do herói | `20 × 1,12^(n−1)`, distribuído entre atributos pela classe |
 | Teto offline | 2 h, +2 h no Armazém, +2 h por talento (máx. 12 h) |
+| Inventário de itens | 30 itens, configurável no estado (`limiteInventario`) `[suposição]`. Cheio, a bigorna para (também offline) |
 | Produção offline | 100 % da taxa, simulada em passos de 10 s (respeita gargalos e filas) `[suposição]` |
 
 **Qualidade do item**
@@ -123,6 +124,15 @@
 - `Brasas = floor( sqrt( moedasTotaisDoCiclo / 1 000 000 ) )`.
 - Brasa não gasta: +2 % de produção cada. Talentos custam 1, 2, 3, 5, 8 brasas por tier.
 
+**Notas da fatia 2 (`[suposição]`)**
+
+- Fila de forja: até 5 receitas; os lingotes são gastos quando a tarefa começa. O modo automático repete a última receita enquanto houver lingotes e espaço.
+- Iara: o sorteio de 10 % é gravado quando a tarefa começa; o segundo item sai igual ao primeiro, sem gastar lingotes, se houver espaço.
+- Odair na bigorna: +5 % (+10 % no nível 10) de velocidade e multiplica o Q final.
+- Ferreiro sem posto não dá bônus; sem ferreiro na bigorna, o nível do ferreiro conta 0 e o item sai "forjado por Você".
+- "Forjar com batida" só vale com a bigorna livre (nunca entra na fila). Abandonar o minigame vale o bônus automático (+5).
+- O sim joga sempre no automático (sem batida), o pior caso.
+
 ### 4.3 Primeiros 10 níveis
 
 | n | Mina custo → n+1 | Minério/s | Carvoaria custo | Carvão/s | Fornalha custo | Lingote/s | XP do herói → n+1 | Poder base |
@@ -146,7 +156,7 @@ Leitura: a mina sobe rápido e barato, a fornalha é o gargalo de propósito. A 
 |---|---|
 | Primeira compra | < 15 s |
 | Maior intervalo sem nada comprável | ≤ 10 min |
-| Bigorna liberada | ~5 min |
+| Bigorna liberada | ~5 min (teste: entre 3 e 8 min) |
 | Primeiro herói | ~10 min |
 | Chefe 1 | ~20 min de jogo ativo |
 | Chefe 2 | 18 – 30 h (com offline) |
@@ -158,7 +168,7 @@ Leitura: a mina sobe rápido e barato, a fornalha é o gargalo de propósito. A 
 | Risco | Mitigação |
 |---|---|
 | Adiantar o relógio do celular | Teto offline; se o relógio voltar no tempo, ignora o intervalo negativo e não pune |
-| Fechar o app durante o minigame para tentar de novo | O resultado aleatório é sorteado e salvo antes do minigame começar |
+| Fechar o app durante o minigame para tentar de novo | O resultado aleatório é sorteado e salvo antes do minigame começar. **Implementado:** o RNG (mulberry32) vive no estado; o aleatório da qualidade, o alvo da batida e o sorteio da Iara são gravados no início da tarefa; minigame aberto ao fechar o app vale o automático |
 | Repetir expedições curtas infinitamente | XP e loot com `horas^0,5`: curtas rendem mais por hora, mas exigem presença; é o trade-off desejado |
 | Precisão de número grande | `number` (double) até ~1e15 no MVP com arredondamento só na exibição; teste que falha se algum valor do sim passar de 1e15 (aí troca para `break_infinity.js`) |
 | Save corrompido | Versão no save + migrações testadas; backup do último save válido |
@@ -168,6 +178,18 @@ Leitura: a mina sobe rápido e barato, a fornalha é o gargalo de propósito. A 
 **Estações:** Mina, Carvoaria, Fornalha, Bigorna, Forno de aço (região 2).
 
 **Itens (× 2 materiais × 5 qualidades):** Espada, Machado, Escudo, Elmo, Armadura. Variações de material por troca de paleta.
+
+**Receitas da bigorna (ferro; o aço entra na região 2):**
+
+| Item | Lingotes | Tempo (nível 1) | Valor base |
+|---|---|---|---|
+| Espada | 3 | 10 s | 25 |
+| Machado | 3 | 10 s | 25 `[suposição]` |
+| Escudo | 4 | 12 s | 30 |
+| Elmo | 4 | 12 s | 30 `[suposição]` |
+| Armadura | 6 | 20 s | 50 |
+
+Todas rendem 2,5 moedas/s por tempo de bigorna; a diferença está nos lingotes: espada, machado e armadura valem 8,3 por lingote, escudo e elmo 7,5.
 
 **Ferreiros (originais):**
 

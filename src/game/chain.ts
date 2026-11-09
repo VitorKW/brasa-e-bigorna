@@ -3,8 +3,9 @@ import {
   producaoCarvoaria,
   producaoMina,
   velocidadeFornalha,
-  type EstacaoId,
+  type EstacaoProducao,
 } from './constants.ts'
+import { multiplicadorEstacao } from './ferreiros.ts'
 import type { GameState } from './state.ts'
 
 export interface Taxas {
@@ -17,9 +18,9 @@ export interface Taxas {
 }
 
 export function taxas(s: GameState): Taxas {
-  const minerio = producaoMina(s.niveis.mina)
-  const carvao = producaoCarvoaria(s.niveis.carvoaria)
-  const fornalha = velocidadeFornalha(s.niveis.fornalha)
+  const minerio = producaoMina(s.niveis.mina) * multiplicadorEstacao(s, 'mina')
+  const carvao = producaoCarvoaria(s.niveis.carvoaria) * multiplicadorEstacao(s, 'carvoaria')
+  const fornalha = velocidadeFornalha(s.niveis.fornalha) * multiplicadorEstacao(s, 'fornalha')
   const lingote = Math.min(
     fornalha,
     minerio / RECEITA_LINGOTE.minerio,
@@ -33,7 +34,7 @@ export type EstadoFornalha = 'trabalhando' | 'sem-minerio' | 'sem-carvao'
 export interface AnaliseCadeia {
   fornalha: EstadoFornalha
   /** Elo que limita a cadeia (empate favorece a fornalha). */
-  gargalo: EstacaoId
+  gargalo: EstacaoProducao
 }
 
 /**
@@ -55,7 +56,7 @@ export function analisarCadeia(s: GameState): AnaliseCadeia {
   if (faltaMinerio && (!faltaCarvao || porMinerio <= porCarvao)) fornalha = 'sem-minerio'
   else if (faltaCarvao) fornalha = 'sem-carvao'
 
-  let gargalo: EstacaoId = 'fornalha'
+  let gargalo: EstacaoProducao = 'fornalha'
   if (porMinerio < t.fornalha && porMinerio <= porCarvao) gargalo = 'mina'
   else if (porCarvao < t.fornalha) gargalo = 'carvoaria'
 

@@ -1,6 +1,10 @@
-// Todas as curvas do GDD §4.2 (fatia 1). Funções puras, sem React.
+// Curvas do GDD §4.2 (fatias 1 e 2). Funções puras, sem React.
 
-export const ESTACOES = ['mina', 'carvoaria', 'fornalha'] as const
+/** Estações que produzem de forma contínua (a bigorna trabalha por tarefas, em bigorna.ts). */
+export const ESTACOES_PRODUCAO = ['mina', 'carvoaria', 'fornalha'] as const
+export type EstacaoProducao = (typeof ESTACOES_PRODUCAO)[number]
+
+export const ESTACOES = [...ESTACOES_PRODUCAO, 'bigorna'] as const
 export type EstacaoId = (typeof ESTACOES)[number]
 
 export const RECURSOS = ['minerio', 'carvao', 'lingote'] as const
@@ -11,7 +15,16 @@ export const CUSTO_UPGRADE: Record<EstacaoId, { base: number; taxa: number }> = 
   mina: { base: 10, taxa: 1.15 },
   carvoaria: { base: 15, taxa: 1.15 },
   fornalha: { base: 50, taxa: 1.18 },
+  /** Nível 0 = bloqueada: o custo do nível 0 -> 1 é o custo de desbloqueio. */
+  bigorna: { base: 200, taxa: 1.2 },
 }
+
+/** Tempo de forja = base * 0,92^(n-1) (GDD §4.2). */
+export const BIGORNA = {
+  fatorTempoPorNivel: 0.92,
+  /** Custo do nível 0 -> 1 (desbloqueio). Os níveis seguintes seguem 200 × 1,2^n. Achado pelo sim. */
+  custoDesbloqueio: 500,
+} as const
 
 /** Produção por segundo no nível 1 (mina e carvoaria). */
 export const PRODUCAO_BASE = { mina: 1, carvoaria: 0.5 } as const
@@ -38,7 +51,7 @@ export const OFFLINE = {
 } as const
 
 export const MOEDAS_INICIAIS = 10
-export const SAVE_VERSION = 1
+export const SAVE_VERSION = 2
 
 /** marco(n) = 2 ^ (quantidade de marcos já atingidos). */
 export function marco(n: number): number {
@@ -49,8 +62,14 @@ export function marco(n: number): number {
 
 /** Custo para subir a estação do nível n para n+1. */
 export function custoUpgrade(estacao: EstacaoId, n: number): number {
+  if (estacao === 'bigorna' && n === 0) return BIGORNA.custoDesbloqueio
   const { base, taxa } = CUSTO_UPGRADE[estacao]
   return base * Math.pow(taxa, n)
+}
+
+/** Tempo (s) para forjar um item no nível n da bigorna, sem bônus de ferreiro. */
+export function tempoForjaBase(segundosBase: number, n: number): number {
+  return segundosBase * Math.pow(BIGORNA.fatorTempoPorNivel, Math.max(0, n - 1))
 }
 
 export function producaoMina(n: number): number {

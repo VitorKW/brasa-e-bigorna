@@ -1,4 +1,6 @@
 import { OFFLINE } from './constants.ts'
+import { abandonarMinigame, inventarioCheio } from './bigorna.ts'
+import type { Qualidade } from './items.ts'
 import type { GameState } from './state.ts'
 import { PRODUZIDO_ZERO, tickDetalhado, type Produzido } from './tick.ts'
 
@@ -10,11 +12,17 @@ export interface ResumoOffline {
   limitadoPeloTeto: boolean
   /** Total bruto produzido (minério/carvão produzidos; lingotes fundidos). */
   produzido: Produzido
+  /** Itens forjados enquanto o app estava fechado, por qualidade (sem minigame). */
+  forjados: Record<Qualidade, number>
+  totalForjados: number
+  /** A bigorna parou porque o inventário encheu. */
+  inventarioCheio: boolean
 }
 
 /**
  * Simula o tempo em que o app ficou fechado, em passos de 10 s para respeitar
  * gargalos. Relógio que voltou (intervalo negativo) é ignorado sem punição.
+ * Um minigame que ficou aberto vale o bônus automático (sem segunda chance).
  */
 export function applyOffline(
   s: GameState,
@@ -24,8 +32,10 @@ export function applyOffline(
   const segundosAusente = Number.isFinite(bruto) && bruto > 0 ? bruto : 0
   const segundosSimulados = Math.min(segundosAusente, OFFLINE.tetoSegundos)
 
-  let estado = s
+  let estado = abandonarMinigame(s)
   const produzido: Produzido = { ...PRODUZIDO_ZERO }
+  const forjados: Record<Qualidade, number> = { comum: 0, incomum: 0, raro: 0, epico: 0, lendario: 0 }
+  let totalForjados = 0
   let restante = segundosSimulados
   while (restante > 1e-9) {
     const dt = Math.min(OFFLINE.passoSegundos, restante)
@@ -34,6 +44,10 @@ export function applyOffline(
     produzido.minerio += r.produzido.minerio
     produzido.carvao += r.produzido.carvao
     produzido.lingote += r.produzido.lingote
+    for (const f of r.forjados) {
+      forjados[f.item.qualidade]++
+      totalForjados++
+    }
     restante -= dt
   }
 
@@ -44,6 +58,9 @@ export function applyOffline(
       segundosSimulados,
       limitadoPeloTeto: segundosAusente > OFFLINE.tetoSegundos,
       produzido,
+      forjados,
+      totalForjados,
+      inventarioCheio: estado.niveis.bigorna >= 1 && inventarioCheio(estado) && totalForjados > 0,
     },
   }
 }

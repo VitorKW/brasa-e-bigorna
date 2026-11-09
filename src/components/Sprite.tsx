@@ -1,6 +1,12 @@
 import { useEffect, useState, type CSSProperties } from 'react'
+import { FERREIROS, type FerreiroId } from '../game/ferreiros.ts'
+import { MATERIAIS, TIPOS_ITEM, type MaterialId, type TipoItem } from '../game/items.ts'
 
 export type SpriteNome =
+  | `item_${TipoItem}_${MaterialId}`
+  | `ferreiro_${FerreiroId}`
+  | 'bigorna'
+  | 'bigorna_batendo'
   | 'mina'
   | 'carvoaria'
   | 'fornalha'
@@ -22,7 +28,29 @@ interface Def {
   quadros?: number
 }
 
+const COR_MATERIAL: Record<MaterialId, string> = { ferro: '#5b5662', aco: '#7d8aa0' }
+
+const SPRITES_ITEM = Object.fromEntries(
+  TIPOS_ITEM.flatMap((tipo) =>
+    MATERIAIS.map((m) => [
+      `item_${tipo}_${m}`,
+      { w: 16, h: 16, cor: COR_MATERIAL[m], texto: '#f3e9dc', inicial: tipo.charAt(0).toUpperCase() } satisfies Def,
+    ]),
+  ),
+) as Record<`item_${TipoItem}_${MaterialId}`, Def>
+
+const SPRITES_FERREIRO = Object.fromEntries(
+  FERREIROS.map((id) => [
+    `ferreiro_${id}`,
+    { w: 24, h: 24, cor: '#2e2a30', texto: '#ffd47a', inicial: id.charAt(0).toUpperCase() } satisfies Def,
+  ]),
+) as Record<`ferreiro_${FerreiroId}`, Def>
+
 const SPRITES: Record<SpriteNome, Def> = {
+  ...SPRITES_ITEM,
+  ...SPRITES_FERREIRO,
+  bigorna: { w: 32, h: 32, cor: '#5b5662', texto: '#f3e9dc', inicial: 'B' },
+  bigorna_batendo: { w: 32, h: 32, cor: '#f29a3a', texto: '#1b1618', inicial: 'B', quadros: 4 },
   mina: { w: 32, h: 32, cor: '#5b5662', texto: '#f3e9dc', inicial: 'M' },
   carvoaria: { w: 32, h: 32, cor: '#2e2a30', texto: '#f3e9dc', inicial: 'C' },
   fornalha: { w: 32, h: 32, cor: '#5b5662', texto: '#f3e9dc', inicial: 'F' },

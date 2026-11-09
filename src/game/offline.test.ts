@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { OFFLINE } from './constants.ts'
 import { applyOffline } from './offline.ts'
-import { estadoInicial } from './state.ts'
+import { alternarAutomatico, forjar } from './bigorna.ts'
+import { estadoInicial, type GameState } from './state.ts'
 import { tick } from './tick.ts'
 
 describe('applyOffline', () => {
@@ -53,8 +54,73 @@ describe('applyOffline', () => {
   })
 
   it('gargalo vale offline: mina fraca limita lingotes', () => {
-    const s = { ...estadoInicial(0), niveis: { mina: 1, carvoaria: 10, fornalha: 10 } }
+    const s = { ...estadoInicial(0), niveis: { mina: 1, carvoaria: 10, fornalha: 10, bigorna: 0 } }
     const { resumo } = applyOffline(s, 100_000)
     expect(resumo.produzido.lingote).toBeCloseTo(50, 3) // 100 minério / 2
+  })
+
+  it('bigorna automática forja offline; resumo conta por qualidade (sem minigame)', () => {
+    let s: GameState = {
+      ...estadoInicial(0, 5),
+      limiteInventario: 100,
+      niveis: { mina: 10, carvoaria: 10, fornalha: 10, bigorna: 1 },
+      recursos: { minerio: 0, carvao: 0, lingote: 30 },
+    }
+    s = alternarAutomatico(forjar(s, 'espada'))
+    const { estado, resumo } = applyOffline(s, 600_000)
+    expect(resumo.totalForjados).toBeGreaterThan(30)
+    expect(Object.values(resumo.forjados).reduce((a, b) => a + b, 0)).toBe(resumo.totalForjados)
+    expect(estado.itens).toHaveLength(resumo.totalForjados)
+    expect(resumo.inventarioCheio).toBe(false)
+  })
+
+  it('bigorna parada (manual) não forja nada offline além da tarefa em curso', () => {
+    const s: GameState = {
+      ...estadoInicial(0),
+      niveis: { mina: 10, carvoaria: 10, fornalha: 10, bigorna: 1 },
+      recursos: { minerio: 0, carvao: 0, lingote: 30 },
+    }
+    expect(applyOffline(s, 600_000).resumo.totalForjados).toBe(0)
+  })
+
+  it('inventário cheio para a bigorna e o resumo avisa', () => {
+    let s: GameState = {
+      ...estadoInicial(0),
+      limiteInventario: 5,
+      niveis: { mina: 10, carvoaria: 10, fornalha: 10, bigorna: 1 },
+      recursos: { minerio: 0, carvao: 0, lingote: 1000 },
+    }
+    s = alternarAutomatico(forjar(s, 'espada'))
+    const { estado, resumo } = applyOffline(s, 3_600_000)
+    expect(estado.itens).toHaveLength(5)
+    expect(resumo.totalForjados).toBe(5)
+    expect(resumo.inventarioCheio).toBe(true)
+  })
+
+  it('minigame que ficou aberto vale o automático e não rerrola', () => {
+    let s: GameState = {
+      ...estadoInicial(0),
+      niveis: { mina: 1, carvoaria: 1, fornalha: 1, bigorna: 1 },
+      recursos: { minerio: 0, carvao: 0, lingote: 10 },
+    }
+    s = forjar(s, 'espada', true)
+    const sorteio = s.forja!.aleatorio
+    const { estado } = applyOffline(s, 60_000)
+    expect(estado.itens).toHaveLength(1)
+    // 5 (automático) + 1 (bigorna) + sorteio gravado, sem ferreiro
+    expect(estado.itens[0]!.pontuacao).toBe(5 + 1 + sorteio)
+  })
+
+  it('online (passos de 0,2 s) e offline (passos de 10 s) concordam na quantidade de itens', () => {
+    let s: GameState = {
+      ...estadoInicial(0, 8),
+      niveis: { mina: 10, carvoaria: 10, fornalha: 10, bigorna: 2 },
+      recursos: { minerio: 0, carvao: 0, lingote: 60 },
+    }
+    s = alternarAutomatico(forjar(s, 'espada'))
+    let online = s
+    for (let i = 0; i < 3000; i++) online = tick(online, 0.2)
+    const off = applyOffline(s, 600_000).estado
+    expect(Math.abs(off.itens.length - online.itens.length)).toBeLessThanOrEqual(1)
   })
 })

@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react'
-import { motion, useReducedMotion } from 'motion/react'
+import { motion, useIsPresent, useReducedMotion } from 'motion/react'
 import { OFFLINE } from '../game/constants.ts'
 import { formatar, formatarDuracao } from '../game/format.ts'
 import type { ResumoOffline } from '../game/offline.ts'
+import { QUALIDADES, rotuloQualidade } from '../game/items.ts'
+import { COR_QUALIDADE } from './qualidade.ts'
 import { Sprite, type SpriteNome } from './Sprite.tsx'
 
 const LINHAS: { id: keyof ResumoOffline['produzido']; rotulo: string; icone: SpriteNome }[] = [
@@ -13,6 +15,9 @@ const LINHAS: { id: keyof ResumoOffline['produzido']; rotulo: string; icone: Spr
 
 export function OfflineModal({ resumo, onFechar }: { resumo: ResumoOffline; onFechar: () => void }) {
   const reduzir = useReducedMotion()
+  // Durante a animação de saída o fundo não pode interceptar toques (bug da fatia 1:
+  // o primeiro 'Vender tudo' logo após fechar era engolido pelo backdrop).
+  const presente = useIsPresent()
   const botao = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -25,6 +30,7 @@ export function OfflineModal({ resumo, onFechar }: { resumo: ResumoOffline; onFe
   return (
     <motion.div
       className="modal-fundo"
+      style={{ pointerEvents: presente ? 'auto' : 'none' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -54,6 +60,22 @@ export function OfflineModal({ resumo, onFechar }: { resumo: ResumoOffline; onFe
             </li>
           ))}
         </ul>
+        {resumo.totalForjados > 0 && (
+          <div className="modal-forjados">
+            <p className="modal-texto">A bigorna forjou {resumo.totalForjados} {resumo.totalForjados === 1 ? 'item' : 'itens'}:</p>
+            <ul className="modal-lista">
+              {QUALIDADES.filter((q) => resumo.forjados[q] > 0).map((q) => (
+                <li key={q} className="modal-qualidade" style={{ borderColor: COR_QUALIDADE[q] }}>
+                  <span style={{ color: COR_QUALIDADE[q] }}>{rotuloQualidade(q)}</span>
+                  <strong>+{resumo.forjados[q]}</strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {resumo.inventarioCheio && (
+          <p className="modal-texto">O inventário encheu e a bigorna parou. Venda itens para ela continuar.</p>
+        )}
         <button
           ref={botao}
           type="button"

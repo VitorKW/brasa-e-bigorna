@@ -28,14 +28,14 @@ describe('tick', () => {
   })
 
   it('sem carvão suficiente a fornalha para (gargalo) e o minério sobra', () => {
-    const s = tick(base({ niveis: { mina: 10, carvoaria: 1, fornalha: 10 } }), 10)
+    const s = tick(base({ niveis: { mina: 10, carvoaria: 1, fornalha: 10, bigorna: 0 } }), 10)
     expect(s.recursos.lingote).toBeCloseTo(5, 6) // carvão produzido: 0,5/s * 10 s
     expect(s.recursos.carvao).toBeCloseTo(0, 6)
     expect(s.recursos.minerio).toBeCloseTo(200 - 10, 6)
   })
 
   it('fornalha limitada pelo minério produz exatamente minério/2', () => {
-    const s = tick(base({ niveis: { mina: 1, carvoaria: 10, fornalha: 10 } }), 10)
+    const s = tick(base({ niveis: { mina: 1, carvoaria: 10, fornalha: 10, bigorna: 0 } }), 10)
     expect(s.recursos.lingote).toBeCloseTo(5, 6) // 10 minério / 2
     expect(s.recursos.minerio).toBeCloseTo(0, 6)
   })
@@ -49,7 +49,7 @@ describe('cadeia e gargalo', () => {
   })
 
   it('mina fraca: mina é o gargalo e a fornalha para sem minério', () => {
-    const s = base({ niveis: { mina: 1, carvoaria: 10, fornalha: 10 } })
+    const s = base({ niveis: { mina: 1, carvoaria: 10, fornalha: 10, bigorna: 0 } })
     expect(taxas(s).lingote).toBeCloseTo(0.5, 9)
     const a = analisarCadeia(s)
     expect(a.gargalo).toBe('mina')
@@ -57,7 +57,7 @@ describe('cadeia e gargalo', () => {
   })
 
   it('carvoaria fraca: sem carvão', () => {
-    const s = base({ niveis: { mina: 10, carvoaria: 1, fornalha: 10 } })
+    const s = base({ niveis: { mina: 10, carvoaria: 1, fornalha: 10, bigorna: 0 } })
     const a = analisarCadeia(s)
     expect(a.gargalo).toBe('carvoaria')
     expect(a.fornalha).toBe('sem-carvao')
@@ -65,7 +65,7 @@ describe('cadeia e gargalo', () => {
 
   it('estoque cobrindo a fornalha desliga o alerta', () => {
     const s = base({
-      niveis: { mina: 1, carvoaria: 10, fornalha: 10 },
+      niveis: { mina: 1, carvoaria: 10, fornalha: 10, bigorna: 0 },
       recursos: { minerio: 100, carvao: 100, lingote: 0 },
     })
     expect(analisarCadeia(s).fornalha).toBe('trabalhando')

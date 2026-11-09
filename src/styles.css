@@ -494,6 +494,520 @@ p {
   color: var(--laranja);
 }
 
+/* Cadeia: espaço entre mina e carvoaria (sem conector) */
+.espaco-cadeia {
+  height: 8px;
+}
+
+.estacao-arte {
+  position: relative;
+}
+
+/* Bigorna: cartão alto, todos os blocos em largura total abaixo da arte e do título. */
+.bigorna {
+  grid-template-areas: none;
+  align-content: start;
+}
+
+.bigorna .estacao-arte,
+.bigorna .estacao-info,
+.bigorna .botao-melhorar {
+  grid-area: auto;
+}
+
+.bigorna > :not(.estacao-arte):not(.estacao-info) {
+  grid-column: 1 / -1;
+}
+
+.bigorna-feedback {
+  min-height: 24px;
+}
+
+.forja-andamento {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.forja-linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.forja-linha strong {
+  font-family: var(--fonte-titulo);
+  font-size: 20px;
+  color: var(--laranja);
+  font-variant-numeric: tabular-nums;
+}
+
+.barra {
+  height: 14px;
+  background: var(--carvao);
+  border: 1px solid var(--aco);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.barra-fina {
+  height: 8px;
+}
+
+.barra-cheia {
+  height: 100%;
+  background: linear-gradient(90deg, var(--brasa), var(--laranja), var(--amarelo));
+  transition: width 200ms linear;
+}
+
+.receitas {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.receita {
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  grid-template-areas:
+    'sprite nome valor'
+    'sprite info valor';
+  align-items: center;
+  column-gap: 10px;
+  padding: 4px 10px;
+  text-align: left;
+  background: var(--carvao);
+  border: 2px solid var(--aco-desligado);
+  border-radius: var(--raio);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.receita > :first-child {
+  grid-area: sprite;
+}
+
+.receita.marcada {
+  border-color: var(--amarelo);
+  background: #3a353d;
+}
+
+.receita-nome {
+  grid-area: nome;
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.receita-info {
+  grid-area: info;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.receita-info.falta {
+  color: var(--laranja);
+}
+
+.receita-valor {
+  grid-area: valor;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--amarelo);
+}
+
+.forja-acoes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.forja-dica {
+  min-height: 1.3em;
+}
+
+.interruptor {
+  justify-content: flex-start;
+  gap: 12px;
+  background: var(--carvao);
+  border: 1px solid var(--aco);
+  text-align: left;
+  font-size: 17px;
+}
+
+.interruptor small {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--texto-suave);
+}
+
+.interruptor-trilho {
+  flex: none;
+  width: 46px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--aco);
+  padding: 3px;
+  display: flex;
+}
+
+.interruptor-bola {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--texto);
+  transition: transform 120ms ease-out;
+}
+
+.interruptor.ligado .interruptor-trilho {
+  background: var(--laranja);
+}
+
+.interruptor.ligado .interruptor-bola {
+  transform: translateX(20px);
+  background: var(--carvao);
+}
+
+.fila {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fila li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 2px 10px;
+  border: 1px solid var(--aco);
+  border-radius: 999px;
+  background: var(--carvao);
+  font-size: 16px;
+}
+
+.botao-icone {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--amarelo);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Faíscas do golpe perfeito. */
+.faiscas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.faisca {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  margin: -2px;
+  background: var(--amarelo);
+  box-shadow: 0 0 6px var(--laranja);
+  animation: faisca 600ms ease-out forwards;
+}
+
+@keyframes faisca {
+  from {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--dx), var(--dy));
+    opacity: 0;
+  }
+}
+
+/* Seções abaixo da cadeia: itens e ferreiros. */
+.secao {
+  margin-top: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.secao-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.secao h2 {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.secao-contagem {
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.secao-contagem.cheio {
+  color: var(--laranja);
+}
+
+.massa {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.massa-botao {
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  font-size: 16px;
+  line-height: 1.1;
+  border-width: 2px;
+}
+
+.massa-botao:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.itens,
+.ferreiros {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 6px 8px;
+  background: var(--carvao);
+  border: 2px solid var(--aco);
+  border-radius: var(--raio);
+}
+
+.item-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.item-nome {
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.item-qualidade {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.1;
+}
+
+.item-ferreiro {
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+
+.item-vender {
+  min-width: 84px;
+  font-family: var(--fonte-titulo);
+  font-size: 18px;
+}
+
+.ferreiro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--carvao);
+  border: 1px solid var(--aco);
+  border-radius: var(--raio);
+}
+
+.ferreiro-topo {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.ferreiro-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ferreiro-nome {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.ferreiro-passiva {
+  font-size: 15px;
+  color: var(--texto-suave);
+}
+
+.ferreiro-nivel {
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--amarelo);
+  font-variant-numeric: tabular-nums;
+}
+
+.postos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.posto {
+  flex: 1 1 96px;
+  flex-direction: column;
+  gap: 0;
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.posto small {
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* Minigame da batida. */
+.batida-barra {
+  position: relative;
+  height: 56px;
+  margin: 10px 0 2px;
+  border-radius: var(--raio);
+  border: 2px solid var(--aco);
+  background: linear-gradient(90deg, #3a353d 0%, #7a3a22 22%, var(--brasa) 45%, var(--laranja) 72%, var(--amarelo) 100%);
+}
+
+.batida-zona {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.batida-zona.bom {
+  background: rgba(243, 233, 220, 0.4);
+  border-left: 2px dashed var(--texto);
+  border-right: 2px dashed var(--texto);
+}
+
+.batida-zona.perfeito {
+  background: #fff6dc;
+  border-left: 2px solid var(--carvao);
+  border-right: 2px solid var(--carvao);
+}
+
+.batida-marcador {
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  left: 0;
+  width: 6px;
+  margin-left: -3px;
+  background: var(--carvao);
+  box-shadow: 0 0 0 2px var(--texto);
+  border-radius: 3px;
+}
+
+.batida-legenda {
+  display: flex;
+  gap: 16px;
+  font-size: 15px;
+  color: var(--texto-suave);
+}
+
+.amostra {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  border: 2px solid var(--texto);
+}
+
+.amostra.perfeito {
+  background: #fff6dc;
+}
+
+.amostra.bom {
+  background: rgba(243, 233, 220, 0.4);
+  border-style: dashed;
+}
+
+.batida-tempo {
+  height: 6px;
+  background: var(--carvao);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.batida-tempo-cheio {
+  height: 100%;
+  background: var(--laranja);
+  transform-origin: left;
+}
+
+.batida-resultado {
+  min-height: 1.4em;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--amarelo);
+}
+
+.batida-botao {
+  min-height: 72px;
+  font-size: 26px;
+  font-family: var(--fonte-titulo);
+  touch-action: manipulation;
+}
+
+/* Modal com muito conteúdo rola dentro dele. */
+.modal {
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.modal-qualidade {
+  border-left: 4px solid;
+  padding-left: 10px;
+}
+
 /* Movimento reduzido: sem faixas animadas, sem botões que "afundam". */
 @media (prefers-reduced-motion: reduce) {
   .sprite-faixa {
@@ -504,5 +1018,13 @@ p {
   }
   .botao:active:not(:disabled) {
     transform: none;
+  }
+  .barra-cheia,
+  .interruptor-bola,
+  .batida-tempo-cheio {
+    transition: none;
+  }
+  .faiscas {
+    display: none;
   }
 }
