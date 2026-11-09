@@ -37,7 +37,7 @@ describe('ritmo (simulação gulosa de 2 h)', () => {
     expect(r.itensForjados).toBeGreaterThan(100)
     expect(r.primeiraQualidade.incomum).not.toBeNull()
     expect(r.primeiraQualidade.raro).not.toBeNull()
-    expect(r.primeiraQualidade.epico).not.toBeNull()
+    // o épico agora vem perto das 2 h: coberto pelo bloco de raridade abaixo
   })
 
   it('é determinística (mesma semente, mesmo resultado)', () => {
@@ -47,3 +47,24 @@ describe('ritmo (simulação gulosa de 2 h)', () => {
     expect(b.compras).toEqual(a.compras)
   })
 })
+
+// Metas de raridade (GDD §4.4). O sim joga contínuo e sempre no automático, então é o caminho
+// mais rápido possível sem minigame: se aqui o épico já sai cedo, no jogo real sai mais cedo ainda.
+describe('raridade (simulação gulosa de 3 h, passo de 1 s)', () => {
+  const r = simular(3, 1)
+  const total = Object.values(r.itensPorQualidade).reduce((a, b) => a + b, 0)
+
+  it('primeiro épico entre 1 h 30 e 2 h 45 (meta: ~2 h)', () => {
+    expect(r.primeiraQualidade.epico).not.toBeNull()
+    expect(r.primeiraQualidade.epico!).toBeGreaterThanOrEqual(90 * 60)
+    expect(r.primeiraQualidade.epico!).toBeLessThanOrEqual(165 * 60)
+  })
+
+  it('nenhum lendário de ferro no automático nas primeiras 3 h', () => {
+    expect(r.primeiraQualidade.lendario).toBeNull()
+  })
+
+  it('épicos são menos de 10 % dos itens nas primeiras 3 h', () => {
+    expect(r.itensPorQualidade.epico / total).toBeLessThan(0.1)
+  })
+}, 30_000)

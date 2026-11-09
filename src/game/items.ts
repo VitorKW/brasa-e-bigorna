@@ -120,11 +120,17 @@ export interface EntradaQ {
   multiplicador?: number
 }
 
-/** Q = 2 × nívelFerreiro + nívelBigorna + bônusMaterial + bônusBatida + aleatório (+ passivas). */
+/**
+ * Peso de cada fonte na qualidade. A bigorna sobe de nível sem teto, então entra dividida
+ * (ajustado pelo sim: com peso 1 o jogo virava 75 % lendário em 2 h).
+ */
+export const Q_PESOS = { porNivelFerreiro: 2, divisorBigorna: 3 } as const
+
+/** Q = 2 × nívelFerreiro + ⌊nívelBigorna / 3⌋ + bônusMaterial + bônusBatida + aleatório (+ passivas). */
 export function calcularQ(e: EntradaQ): number {
   const soma =
-    2 * e.nivelFerreiro +
-    e.nivelBigorna +
+    Q_PESOS.porNivelFerreiro * e.nivelFerreiro +
+    Math.floor(e.nivelBigorna / Q_PESOS.divisorBigorna) +
     BONUS_MATERIAL[e.material] +
     BONUS_BATIDA[e.batida] +
     e.aleatorio +

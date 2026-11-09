@@ -107,8 +107,8 @@ describe('applyOffline', () => {
     const sorteio = s.forja!.aleatorio
     const { estado } = applyOffline(s, 60_000)
     expect(estado.itens).toHaveLength(1)
-    // 5 (automático) + 1 (bigorna) + sorteio gravado, sem ferreiro
-    expect(estado.itens[0]!.pontuacao).toBe(5 + 1 + sorteio)
+    // 5 (automático) + ⌊1/3⌋ = 0 (bigorna) + sorteio gravado, sem ferreiro
+    expect(estado.itens[0]!.pontuacao).toBe(5 + 0 + sorteio)
   })
 
   it('online (passos de 0,2 s) e offline (passos de 10 s) concordam na quantidade de itens', () => {

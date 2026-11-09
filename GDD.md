@@ -89,7 +89,7 @@
 | Tempo de forja do item | `base × 0,92^(n−1)`; espada 3 lingotes/10 s, machado 3/10 s `[suposição]`, escudo 4/12 s, elmo 4/12 s `[suposição]`, armadura 6/20 s |
 | Valor de venda do item | `valorBase × multQualidade × multMaterial`; espada 25, escudo 30, armadura 50, machado 25 `[suposição]`, elmo 30 `[suposição]`; ferro ×1, aço ×4 |
 | Custo de contratar ferreiro | `100 × 4^k` (k = ferreiros já contratados) |
-| XP do ferreiro | 1 XP por item forjado na bigorna; na fornalha, 1 XP por 10 lingotes; na carvoaria, 1 por 20 carvões; na mina, 1 por 40 minérios `[suposição]` (divisores para os níveis subirem num ritmo parecido, ~1 XP/10 s no começo). Próximo nível em `10 × 1,3^(n−1)` |
+| XP do ferreiro | 1 XP por item forjado na bigorna; na fornalha, 1 XP por 10 lingotes; na carvoaria, 1 por 20 carvões; na mina, 1 por 40 minérios `[suposição]` (divisores para os níveis subirem num ritmo parecido, ~1 XP/10 s no começo). Próximo nível em `10 × 1,65^(n−1)`, máximo nível 20. Ajustado pelo sim: com 1,3 o ferreiro chegava ao 20 em ~1 h e o épico saía aos 33 min |
 | XP do herói (n → n+1) | `50 × 1,25^(n−1)` |
 | Poder base do herói | `20 × 1,12^(n−1)`, distribuído entre atributos pela classe |
 | Teto offline | 2 h, +2 h no Armazém, +2 h por talento (máx. 12 h) |
@@ -98,7 +98,10 @@
 
 **Qualidade do item**
 
-`Q = 2 × nívelFerreiro + nívelBigorna + bônusMaterial + bônusBatida + aleatório(0..20)`
+`Q = 2 × nívelFerreiro + ⌊nívelBigorna / 3⌋ + bônusMaterial + bônusBatida + aleatório(0..20)`
+
+- Ajustado pelo sim: com a bigorna valendo o nível inteiro, ela (que não tem teto) dominava a fórmula e 75 % dos itens eram lendários após 2 h. Agora o teto prático no ferro, só no automático, é ~80 a 90 (épico).
+- Lendário de ferro exige batida perfeita (o atalho do minigame) ou Mestre Odair no máximo com sorte. No aço (+10) o lendário automático passa a ser alcançável: é a recompensa da região 2.
 
 - `bônusMaterial`: ferro 0, aço 10.
 - `bônusBatida`: automático +5, "bom" +10, "perfeito" +20, errou +5 (nunca pior que o automático).
@@ -162,6 +165,9 @@ Leitura: a mina sobe rápido e barato, a fornalha é o gargalo de propósito. A 
 | Chefe 2 | 18 – 30 h (com offline) |
 | Primeiro Reforjar | 2 – 4 dias, rendendo 5 – 15 brasas |
 | Segundo ciclo | ≤ 60 % do tempo do primeiro |
+| Primeiro épico | ~2 h de jogo contínuo no automático (teste aceita 1 h 30 a 2 h 45) |
+| Épicos nas primeiras 3 h | < 10 % dos itens |
+| Lendário de ferro no automático | nenhum nas primeiras 3 h (só com batida perfeita ou aço) |
 
 ### 4.5 Exploits e mitigação
 

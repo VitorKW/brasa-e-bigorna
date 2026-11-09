@@ -23,12 +23,12 @@ describe('qualidade', () => {
     expect(qualidadeDe(500)).toBe('lendario')
   })
 
-  it('Q = 2 × ferreiro + bigorna + material + batida + aleatório', () => {
+  it('Q = 2 × ferreiro + ⌊bigorna / 3⌋ + material + batida + aleatório', () => {
     const base = { nivelFerreiro: 3, nivelBigorna: 4, material: 'ferro', batida: 'automatico', aleatorio: 7 } as const
-    expect(calcularQ(base)).toBe(6 + 4 + 0 + 5 + 7)
-    expect(calcularQ({ ...base, material: 'aco' })).toBe(6 + 4 + 10 + 5 + 7)
-    expect(calcularQ({ ...base, batida: 'perfeito' })).toBe(6 + 4 + 20 + 7)
-    expect(calcularQ({ ...base, batida: 'bom' })).toBe(6 + 4 + 10 + 7)
+    expect(calcularQ(base)).toBe(6 + 1 + 0 + 5 + 7)
+    expect(calcularQ({ ...base, material: 'aco' })).toBe(6 + 1 + 10 + 5 + 7)
+    expect(calcularQ({ ...base, batida: 'perfeito' })).toBe(6 + 1 + 20 + 7)
+    expect(calcularQ({ ...base, batida: 'bom' })).toBe(6 + 1 + 10 + 7)
   })
 
   it('errou nunca é pior que o automático', () => {
@@ -38,8 +38,8 @@ describe('qualidade', () => {
 
   it('passivas: bônus fixo e multiplicador', () => {
     const base = { nivelFerreiro: 0, nivelBigorna: 1, material: 'ferro', batida: 'automatico', aleatorio: 4 } as const
-    expect(calcularQ({ ...base, bonusFixo: 10 })).toBe(20)
-    expect(calcularQ({ ...base, multiplicador: 1.1 })).toBe(11) // floor(10 × 1,1)
+    expect(calcularQ({ ...base, bonusFixo: 10 })).toBe(19)
+    expect(calcularQ({ ...base, multiplicador: 1.1 })).toBe(9) // floor(9 × 1,1)
   })
 
   it('valor = base × qualidade × material', () => {
@@ -76,5 +76,14 @@ describe('bigorna: curvas', () => {
     expect(tempoForjaBase(10, 1)).toBe(10)
     expect(tempoForjaBase(10, 2)).toBeCloseTo(9.2, 9)
     expect(tempoForjaBase(20, 11)).toBeCloseTo(20 * 0.92 ** 10, 9)
+  })
+})
+
+describe('teto da qualidade no ferro', () => {
+  it('bigorna alta pesa um terço; lendário de ferro exige ferreiro no máximo e sorte', () => {
+    const base = { nivelFerreiro: 0, material: 'ferro', batida: 'automatico', aleatorio: 0 } as const
+    expect(calcularQ({ ...base, nivelBigorna: 30 })).toBe(10 + 5)
+    // ferreiro nível 20, bigorna 45, automático, sorteio máximo: 40 + 15 + 5 + 20 = 80 (épico)
+    expect(calcularQ({ ...base, nivelFerreiro: 20, nivelBigorna: 45, aleatorio: 20 })).toBe(80)
   })
 })
