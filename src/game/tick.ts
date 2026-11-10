@@ -1,4 +1,4 @@
-import { RECEITA_LINGOTE, type RecursoId } from './constants.ts'
+import { FORNO, RECEITA_ACO, RECEITA_LINGOTE, type RecursoId } from './constants.ts'
 import { avancarBigorna, type Forjado } from './bigorna.ts'
 import { taxas } from './chain.ts'
 import { XP_DIVISOR, darXp } from './ferreiros.ts'
@@ -6,7 +6,7 @@ import type { GameState } from './state.ts'
 
 export type Produzido = Record<RecursoId, number>
 
-export const PRODUZIDO_ZERO: Readonly<Produzido> = { minerio: 0, carvao: 0, lingote: 0 }
+export const PRODUZIDO_ZERO: Readonly<Produzido> = { minerio: 0, carvao: 0, lingote: 0, aco: 0 }
 
 /**
  * Com a bigorna ativa, passos grandes (offline: 10 s) são fatiados em até 1 s, para que a
@@ -41,16 +41,42 @@ function passo(s: GameState, dt: number): ResultadoTick {
       minerio: minerio - lingotes * RECEITA_LINGOTE.minerio,
       carvao: carvao - lingotes * RECEITA_LINGOTE.carvao,
       lingote: s.recursos.lingote + lingotes,
+      aco: s.recursos.aco,
     },
   }
   estado = darXp(estado, 'mina', minerioProd / XP_DIVISOR.mina)
   estado = darXp(estado, 'carvoaria', carvaoProd / XP_DIVISOR.carvoaria)
   estado = darXp(estado, 'fornalha', lingotes / XP_DIVISOR.fornalha)
 
+  // Forno de aço: pega os lingotes e o carvão que sobraram da fornalha (a fornalha tem prioridade
+  // no carvão). Para quando o estoque de aço enche, para não engolir lingotes de ferro à toa.
+  let aco = 0
+  if (s.niveis.forno >= 1) {
+    aco = Math.max(
+      0,
+      Math.min(
+        t.forno * dt,
+        estado.recursos.lingote / RECEITA_ACO.lingote,
+        estado.recursos.carvao / RECEITA_ACO.carvao,
+        FORNO.estoqueMaximo - estado.recursos.aco,
+      ),
+    )
+    estado = {
+      ...estado,
+      recursos: {
+        ...estado.recursos,
+        lingote: estado.recursos.lingote - aco * RECEITA_ACO.lingote,
+        carvao: estado.recursos.carvao - aco * RECEITA_ACO.carvao,
+        aco: estado.recursos.aco + aco,
+      },
+    }
+    estado = darXp(estado, 'forno', aco / XP_DIVISOR.forno)
+  }
+
   const b = avancarBigorna(estado, dt)
   return {
     estado: b.estado,
-    produzido: { minerio: minerioProd, carvao: carvaoProd, lingote: lingotes },
+    produzido: { minerio: minerioProd, carvao: carvaoProd, lingote: lingotes, aco },
     forjados: b.forjados,
   }
 }
@@ -77,6 +103,7 @@ export function tickDetalhado(s: GameState, dtSeconds: number): ResultadoTick {
     produzido.minerio += r.produzido.minerio
     produzido.carvao += r.produzido.carvao
     produzido.lingote += r.produzido.lingote
+    produzido.aco += r.produzido.aco
     forjados.push(...r.forjados)
     restante -= SUBPASSO_SEGUNDOS
   }

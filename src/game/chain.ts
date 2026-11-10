@@ -1,8 +1,10 @@
 import {
+  RECEITA_ACO,
   RECEITA_LINGOTE,
   producaoCarvoaria,
   producaoMina,
   velocidadeFornalha,
+  velocidadeForno,
   type EstacaoProducao,
 } from './constants.ts'
 import { multiplicadorEstacao } from './ferreiros.ts'
@@ -15,6 +17,10 @@ export interface Taxas {
   fornalha: number
   /** Lingotes/s em regime, limitado pelo elo mais fraco da cadeia. */
   lingote: number
+  /** Capacidade do Forno de aço (aço/s) com insumo à vontade; 0 sem o forno. */
+  forno: number
+  /** Aço/s em regime: limitado pelo forno, pelos lingotes de ferro e pelo carvão que sobra. */
+  aco: number
 }
 
 export function taxas(s: GameState): Taxas {
@@ -26,7 +32,10 @@ export function taxas(s: GameState): Taxas {
     minerio / RECEITA_LINGOTE.minerio,
     carvao / RECEITA_LINGOTE.carvao,
   )
-  return { minerio, carvao, fornalha, lingote }
+  const forno = velocidadeForno(s.niveis.forno) * multiplicadorEstacao(s, 'forno')
+  const carvaoLivre = Math.max(0, carvao - RECEITA_LINGOTE.carvao * lingote)
+  const aco = Math.min(forno, lingote / RECEITA_ACO.lingote, carvaoLivre / RECEITA_ACO.carvao)
+  return { minerio, carvao, fornalha, lingote, forno, aco }
 }
 
 export type EstadoFornalha = 'trabalhando' | 'sem-minerio' | 'sem-carvao'

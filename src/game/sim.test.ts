@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { simular } from './sim.ts'
 
-// Metas do GDD §4.4 que se aplicam às fatias 1 e 2. A sim roda uma vez (leva alguns segundos).
+// Metas do GDD §4.4 que se aplicam às fatias 1 a 3. A sim roda uma vez (leva alguns segundos).
 describe('ritmo (simulação gulosa de 2 h)', () => {
   const r = simular(2)
 
@@ -40,31 +40,79 @@ describe('ritmo (simulação gulosa de 2 h)', () => {
     // o épico agora vem perto das 2 h: coberto pelo bloco de raridade abaixo
   })
 
+  it('primeiro herói entre 5 e 15 min (meta: ~10 min)', () => {
+    expect(r.primeiroHeroi).not.toBeNull()
+    expect(r.primeiroHeroi!).toBeGreaterThanOrEqual(5 * 60)
+    expect(r.primeiroHeroi!).toBeLessThanOrEqual(15 * 60)
+  })
+
+  it('manda expedições e elas rendem reputação', () => {
+    expect(r.primeiraExpedicao).not.toBeNull()
+    expect(r.primeiraExpedicao!).toBeGreaterThanOrEqual(r.primeiroHeroi!)
+    expect(r.expedicoes.enviadas).toBeGreaterThan(20)
+    expect(r.expedicoes.sucessos).toBeGreaterThan(r.expedicoes.falhas)
+    expect(r.reputacaoFinal).toBeGreaterThan(100)
+  })
+
+  it('Golem derrotado entre 15 e 40 min (meta: ~20 min)', () => {
+    expect(r.golemDerrotado).not.toBeNull()
+    expect(r.golemDerrotado!).toBeGreaterThanOrEqual(15 * 60)
+    expect(r.golemDerrotado!).toBeLessThanOrEqual(40 * 60)
+    expect(r.golemDerrotado!).toBeGreaterThan(r.primeiroHeroi!)
+  })
+
+  it('depois do Golem: forno de aço, primeiro lingote de aço e itens de aço', () => {
+    expect(r.fornoComprado).not.toBeNull()
+    expect(r.fornoComprado!).toBeGreaterThanOrEqual(r.golemDerrotado!)
+    expect(r.primeiroAco).not.toBeNull()
+    expect(r.primeiroAco!).toBeGreaterThan(r.fornoComprado!)
+    expect(Object.values(r.itensPorMaterial.aco).reduce((a, b) => a + b, 0)).toBeGreaterThan(100)
+  })
+
+  it('o 2º herói chega com reputação e o 3º depois do Golem', () => {
+    expect(r.segundoHeroi).not.toBeNull()
+    expect(r.terceiroHeroi).not.toBeNull()
+    expect(r.terceiroHeroi!).toBeGreaterThanOrEqual(r.golemDerrotado!)
+    expect(r.heroisFinais).toHaveLength(3)
+  })
+
   it('é determinística (mesma semente, mesmo resultado)', () => {
     const a = simular(0.25)
     const b = simular(0.25)
     expect(b.itensPorQualidade).toEqual(a.itensPorQualidade)
     expect(b.compras).toEqual(a.compras)
+    expect(b.golemDerrotado).toEqual(a.golemDerrotado)
   })
 })
 
-// Metas de raridade (GDD §4.4). O sim joga contínuo e sempre no automático, então é o caminho
+// Metas de raridade (GDD §4.4). Elas falam de itens de FERRO: depois do Golem o sim forja em aço (+10 de
+// qualidade), que é a recompensa da região 2, então o aço tem o seu próprio teste mais abaixo. O sim joga contínuo e sempre no automático, então é o caminho
 // mais rápido possível sem minigame: se aqui o épico já sai cedo, no jogo real sai mais cedo ainda.
 describe('raridade (simulação gulosa de 3 h, passo de 1 s)', () => {
   const r = simular(3, 1)
-  const total = Object.values(r.itensPorQualidade).reduce((a, b) => a + b, 0)
-
-  it('primeiro épico entre 1 h 30 e 2 h 45 (meta: ~2 h)', () => {
-    expect(r.primeiraQualidade.epico).not.toBeNull()
-    expect(r.primeiraQualidade.epico!).toBeGreaterThanOrEqual(90 * 60)
-    expect(r.primeiraQualidade.epico!).toBeLessThanOrEqual(165 * 60)
+  it('primeiro épico de ferro entre 1 h 30 e 2 h 45 (meta: ~2 h)', () => {
+    const epico = r.primeiraQualidadePorMaterial.ferro.epico
+    expect(epico).not.toBeNull()
+    expect(epico!).toBeGreaterThanOrEqual(90 * 60)
+    expect(epico!).toBeLessThanOrEqual(165 * 60)
   })
 
   it('nenhum lendário de ferro no automático nas primeiras 3 h', () => {
-    expect(r.primeiraQualidade.lendario).toBeNull()
+    expect(r.primeiraQualidadePorMaterial.ferro.lendario).toBeNull()
   })
 
-  it('épicos são menos de 10 % dos itens nas primeiras 3 h', () => {
-    expect(r.itensPorQualidade.epico / total).toBeLessThan(0.1)
+  it('épicos de ferro são menos de 10 % dos itens de ferro nas primeiras 3 h', () => {
+    const ferro = r.itensPorMaterial.ferro
+    const totalFerro = Object.values(ferro).reduce((a, b) => a + b, 0)
+    expect(totalFerro).toBeGreaterThan(500)
+    expect(ferro.epico / totalFerro).toBeLessThan(0.1)
+  })
+
+  it('o aço (+10) antecipa o épico: sai bem antes do épico de ferro', () => {
+    const aco = r.primeiraQualidadePorMaterial.aco.epico
+    const ferro = r.primeiraQualidadePorMaterial.ferro.epico
+    expect(aco).not.toBeNull()
+    expect(ferro === null || aco! < ferro).toBe(true)
+    expect(aco!).toBeLessThan(90 * 60)
   })
 }, 30_000)

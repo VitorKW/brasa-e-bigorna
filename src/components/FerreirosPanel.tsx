@@ -16,6 +16,7 @@ const NOME_ESTACAO: Record<EstacaoId, string> = {
   mina: 'Mina',
   carvoaria: 'Carvoaria',
   fornalha: 'Fornalha',
+  forno: 'Forno de aço',
   bigorna: 'Bigorna',
 }
 
@@ -63,7 +64,7 @@ function Ferreiro({ id }: { id: FerreiroId }) {
             <div className="barra-cheia" style={{ width: `${Math.min(100, (f.xp / precisa) * 100)}%` }} />
           </div>
           <div className="postos" role="group" aria-label={`Posto de ${def.nome}`}>
-            {def.estacoes.map((e) => {
+            {def.estacoes.filter((e) => e !== 'forno' || jogo.niveis.forno >= 1).map((e) => {
               const aqui = f.estacao === e
               const outro = ferreiroEm(jogo, e)
               const ocupante = outro && outro !== id ? FERREIROS_DEF[outro].nome : null

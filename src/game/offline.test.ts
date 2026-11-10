@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { OFFLINE } from './constants.ts'
+import { partir } from './expedicoes.ts'
+import { recrutar } from './herois.ts'
 import { applyOffline } from './offline.ts'
 import { alternarAutomatico, forjar } from './bigorna.ts'
 import { estadoInicial, type GameState } from './state.ts'
@@ -33,7 +35,7 @@ describe('applyOffline', () => {
     const s = { ...estadoInicial(1_000_000), moedas: 77 }
     const { estado, resumo } = applyOffline(s, 500_000)
     expect(resumo.segundosAusente).toBe(0)
-    expect(resumo.produzido).toEqual({ minerio: 0, carvao: 0, lingote: 0 })
+    expect(resumo.produzido).toEqual({ minerio: 0, carvao: 0, lingote: 0, aco: 0 })
     expect(estado.recursos).toEqual(s.recursos)
     expect(estado.moedas).toBe(77)
     expect(estado.lastTick).toBe(500_000)
@@ -54,7 +56,7 @@ describe('applyOffline', () => {
   })
 
   it('gargalo vale offline: mina fraca limita lingotes', () => {
-    const s = { ...estadoInicial(0), niveis: { mina: 1, carvoaria: 10, fornalha: 10, bigorna: 0 } }
+    const s = { ...estadoInicial(0), niveis: { mina: 1, carvoaria: 10, fornalha: 10, bigorna: 0, forno: 0 } }
     const { resumo } = applyOffline(s, 100_000)
     expect(resumo.produzido.lingote).toBeCloseTo(50, 3) // 100 minério / 2
   })
@@ -63,8 +65,8 @@ describe('applyOffline', () => {
     let s: GameState = {
       ...estadoInicial(0, 5),
       limiteInventario: 100,
-      niveis: { mina: 10, carvoaria: 10, fornalha: 10, bigorna: 1 },
-      recursos: { minerio: 0, carvao: 0, lingote: 30 },
+      niveis: { mina: 10, carvoaria: 10, fornalha: 10, bigorna: 1, forno: 0 },
+      recursos: { minerio: 0, carvao: 0, lingote: 30, aco: 0 },
     }
     s = alternarAutomatico(forjar(s, 'espada'))
     const { estado, resumo } = applyOffline(s, 600_000)
@@ -77,8 +79,8 @@ describe('applyOffline', () => {
   it('bigorna parada (manual) não forja nada offline além da tarefa em curso', () => {
     const s: GameState = {
       ...estadoInicial(0),
-      niveis: { mina: 10, carvoaria: 10, fornalha: 10, bigorna: 1 },
-      recursos: { minerio: 0, carvao: 0, lingote: 30 },
+      niveis: { mina: 10, carvoaria: 10, fornalha: 10, bigorna: 1, forno: 0 },
+      recursos: { minerio: 0, carvao: 0, lingote: 30, aco: 0 },
     }
     expect(applyOffline(s, 600_000).resumo.totalForjados).toBe(0)
   })
@@ -87,8 +89,8 @@ describe('applyOffline', () => {
     let s: GameState = {
       ...estadoInicial(0),
       limiteInventario: 5,
-      niveis: { mina: 10, carvoaria: 10, fornalha: 10, bigorna: 1 },
-      recursos: { minerio: 0, carvao: 0, lingote: 1000 },
+      niveis: { mina: 10, carvoaria: 10, fornalha: 10, bigorna: 1, forno: 0 },
+      recursos: { minerio: 0, carvao: 0, lingote: 1000, aco: 0 },
     }
     s = alternarAutomatico(forjar(s, 'espada'))
     const { estado, resumo } = applyOffline(s, 3_600_000)
@@ -100,8 +102,8 @@ describe('applyOffline', () => {
   it('minigame que ficou aberto vale o automático e não rerrola', () => {
     let s: GameState = {
       ...estadoInicial(0),
-      niveis: { mina: 1, carvoaria: 1, fornalha: 1, bigorna: 1 },
-      recursos: { minerio: 0, carvao: 0, lingote: 10 },
+      niveis: { mina: 1, carvoaria: 1, fornalha: 1, bigorna: 1, forno: 0 },
+      recursos: { minerio: 0, carvao: 0, lingote: 10, aco: 0 },
     }
     s = forjar(s, 'espada', true)
     const sorteio = s.forja!.aleatorio
@@ -114,13 +116,44 @@ describe('applyOffline', () => {
   it('online (passos de 0,2 s) e offline (passos de 10 s) concordam na quantidade de itens', () => {
     let s: GameState = {
       ...estadoInicial(0, 8),
-      niveis: { mina: 10, carvoaria: 10, fornalha: 10, bigorna: 2 },
-      recursos: { minerio: 0, carvao: 0, lingote: 60 },
+      niveis: { mina: 10, carvoaria: 10, fornalha: 10, bigorna: 2, forno: 0 },
+      recursos: { minerio: 0, carvao: 0, lingote: 60, aco: 0 },
     }
     s = alternarAutomatico(forjar(s, 'espada'))
     let online = s
     for (let i = 0; i < 3000; i++) online = tick(online, 0.2)
     const off = applyOffline(s, 600_000).estado
     expect(Math.abs(off.itens.length - online.itens.length)).toBeLessThanOrEqual(1)
+  })
+
+  it('expedições que voltaram durante a ausência entram no resumo (o teto de 2 h não vale para elas)', () => {
+    let s: GameState = { ...estadoInicial(0, 5), moedas: 1e6 }
+    s = recrutar(s, 'guerreiro')
+    s = { ...s, reputacao: 150, chefesDerrotados: ['golem'] }
+    s = recrutar(s, 'guardia')
+    s = partir(partir(s, 1, 'trilha', 0), 2, 'pico', 0) // 2 min e 8 h
+    const oitoHoras = 8 * 3600 * 1000
+    const longa = applyOffline(s, oitoHoras + 1000)
+    expect(longa.resumo.segundosSimulados).toBe(OFFLINE.tetoSegundos)
+    expect(longa.resumo.limitadoPeloTeto).toBe(true)
+    expect(longa.resumo.expedicoes.voltaram).toHaveLength(2)
+    expect(longa.resumo.expedicoes.voltaram.map((v) => v.heroi)).toEqual([s.herois[0]!.nome, s.herois[1]!.nome])
+    const somaMoedas = s.expedicoes.reduce((t, e) => t + e.moedas, 0)
+    expect(longa.resumo.expedicoes.loot.moedas).toBeCloseTo(somaMoedas, 6)
+    // o loot espera a coleta: o offline não credita nada sozinho
+    expect(longa.estado.moedas).toBe(s.moedas)
+    expect(longa.estado.expedicoes).toHaveLength(2)
+
+    // 10 min fora: só a curta voltou
+    const curta = applyOffline(s, 10 * 60 * 1000)
+    expect(curta.resumo.expedicoes.voltaram).toHaveLength(1)
+    expect(curta.resumo.expedicoes.voltaram[0]!.expedicao).toBe('trilha')
+  })
+
+  it('expedição que já tinha voltado antes do último tick não entra de novo no resumo', () => {
+    let s: GameState = { ...estadoInicial(0, 5), moedas: 1e6 }
+    s = partir(recrutar(s, 'guerreiro'), 1, 'trilha', 0)
+    const depois = { ...s, lastTick: 500_000 }
+    expect(applyOffline(depois, 800_000).resumo.expedicoes.voltaram).toHaveLength(0)
   })
 })

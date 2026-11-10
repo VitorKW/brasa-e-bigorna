@@ -152,3 +152,62 @@ export function valorItem(tipo: TipoItem, material: MaterialId, qualidade: Quali
 export function nomeItem(i: Pick<Item, 'tipo' | 'material'>): string {
   return `${NOME_TIPO[i.tipo]} de ${NOME_MATERIAL[i.material]}`
 }
+
+// ---------------------------------------------------------------------------
+// Atributos dos itens (fatia 3). Valores base `[suposição]`, ajustados pelo sim.
+// ---------------------------------------------------------------------------
+
+export interface Atributos {
+  pv: number
+  atq: number
+  def: number
+  vel: number
+}
+
+export const ATRIBUTOS_ZERO: Readonly<Atributos> = { pv: 0, atq: 0, def: 0, vel: 0 }
+
+/** Espaços de equipamento. O elmo tem espaço próprio (decisão da fatia 3, ver GDD §3). */
+export const SLOTS = ['arma', 'escudo', 'armadura', 'elmo'] as const
+export type Slot = (typeof SLOTS)[number]
+
+export const NOME_SLOT: Record<Slot, string> = {
+  arma: 'Arma',
+  escudo: 'Escudo',
+  armadura: 'Armadura',
+  elmo: 'Elmo',
+}
+
+export const SLOT_DO_TIPO: Record<TipoItem, Slot> = {
+  espada: 'arma',
+  machado: 'arma',
+  escudo: 'escudo',
+  armadura: 'armadura',
+  elmo: 'elmo',
+}
+
+/**
+ * Atributos de um item comum de ferro. O valor real = base × multQualidade × multMaterial
+ * (o mesmo multiplicador do preço, GDD §4.2): lendário de aço rende 28 vezes o comum de ferro.
+ * Espada: ataque e um pouco de velocidade; machado: mais ataque, sem velocidade; escudo: defesa;
+ * elmo: pouca defesa e vida; armadura: muita vida e defesa média.
+ */
+export const ATRIBUTOS_BASE: Record<TipoItem, Partial<Atributos>> = {
+  espada: { atq: 28, vel: 2 },
+  machado: { atq: 40 },
+  escudo: { def: 18 },
+  elmo: { def: 7, pv: 150 },
+  armadura: { def: 10, pv: 400 },
+}
+
+/** Atributos que o item dá ao herói (inteiros; todo atributo base > 0 rende pelo menos 1). */
+export function atributosItem(i: Pick<Item, 'tipo' | 'material' | 'qualidade'>): Atributos {
+  const mult = MULT_QUALIDADE[i.qualidade] * MULT_MATERIAL[i.material]
+  const base = ATRIBUTOS_BASE[i.tipo]
+  const f = (v: number | undefined) => (v ? Math.max(1, Math.round(v * mult)) : 0)
+  return { pv: f(base.pv), atq: f(base.atq), def: f(base.def), vel: f(base.vel) }
+}
+
+/** Quanto o item soma ao poder de expedição: ATQ + DEF + PV/10 (GDD §4.2). */
+export function poderDe(a: Atributos): number {
+  return a.atq + a.def + a.pv / 10
+}

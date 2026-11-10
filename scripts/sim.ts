@@ -29,6 +29,20 @@ const linhas: [string, string][] = [
   ['Primeiro item épico', dur(r.primeiraQualidade.epico)],
   ['Primeiro item lendário', dur(r.primeiraQualidade.lendario)],
   ['Primeiro ferreiro contratado', dur(r.primeiroFerreiro)],
+  ['Primeiro herói contratado', dur(r.primeiroHeroi)],
+  ['Primeira expedição', dur(r.primeiraExpedicao)],
+  ['Segundo herói (reputação)', dur(r.segundoHeroi)],
+  ['Golem de Escória derrotado', dur(r.golemDerrotado)],
+  ['  rodadas do combate', r.rodadasDoGolem === null ? '-' : String(r.rodadasDoGolem)],
+  ['Terceiro herói (Golem)', dur(r.terceiroHeroi)],
+  ['Forno de aço comprado', dur(r.fornoComprado)],
+  ['Primeiro lingote de aço', dur(r.primeiroAco)],
+  ['Primeiro lendário de ferro', dur(r.primeiraQualidadePorMaterial.ferro.lendario)],
+  ['Primeiro lendário de aço', dur(r.primeiraQualidadePorMaterial.aco.lendario)],
+  [
+    'Primeiro épico de ferro / de aço',
+    `${dur(r.primeiraQualidadePorMaterial.ferro.epico)} / ${dur(r.primeiraQualidadePorMaterial.aco.epico)}`,
+  ],
   [
     'Maior intervalo entre compras',
     `${dur(r.maiorIntervaloEntreCompras.duracao)} (a partir de ${dur(r.maiorIntervaloEntreCompras.inicio)})`,
@@ -43,11 +57,21 @@ const linhas: [string, string][] = [
   ]),
   ['Compras no total', String(r.compras.length)],
   [
-    'Níveis finais (mina/carvoaria/fornalha/bigorna)',
-    `${r.niveisFinais.mina} / ${r.niveisFinais.carvoaria} / ${r.niveisFinais.fornalha} / ${r.niveisFinais.bigorna}`,
+    'Níveis finais (mina/carvoaria/fornalha/forno/bigorna)',
+    `${r.niveisFinais.mina} / ${r.niveisFinais.carvoaria} / ${r.niveisFinais.fornalha} / ${r.niveisFinais.forno} / ${r.niveisFinais.bigorna}`,
   ],
   ['Itens forjados', String(r.itensForjados)],
-  ['  por qualidade', QUALIDADES.map((q) => `${q} ${r.itensPorQualidade[q]}`).join(', ')],
+  ['  de ferro', QUALIDADES.map((q) => `${q} ${r.itensPorMaterial.ferro[q]}`).join(', ')],
+  ['  de aço', QUALIDADES.map((q) => `${q} ${r.itensPorMaterial.aco[q]}`).join(', ')],
+  [
+    'Expedições (enviadas / sucessos / falhas)',
+    `${r.expedicoes.enviadas} / ${r.expedicoes.sucessos} / ${r.expedicoes.falhas}`,
+  ],
+  ['Reputação / fragmentos', `${Math.floor(r.reputacaoFinal)} / ${r.fragmentosFinais}`],
+  [
+    'Heróis (nível, poder)',
+    r.heroisFinais.map((h) => `${h.nome} ${h.classe} ${h.nivel} (${Math.round(h.poder)})`).join('; ') || 'nenhum',
+  ],
   [
     'Ferreiros (nível, posto)',
     r.ferreirosFinais.map((f) => `${f.id} ${f.nivel} ${f.estacao ?? '-'}`).join('; ') || 'nenhum',
@@ -58,7 +82,7 @@ for (const [k, v] of linhas) console.log(`${k.padEnd(48)}  ${v}`)
 
 console.log('\nPrimeiras compras')
 for (const c of r.compras.slice(0, 12)) {
-  const nivel = c.tipo === 'ferreiro' ? 'contratado' : `-> nível ${c.nivel}`
+  const nivel = c.tipo === 'ferreiro' || c.tipo === 'heroi' ? 'contratado' : `-> nível ${c.nivel}`
   console.log(`  ${virgula(c.t).padStart(7)} s  ${c.alvo.padEnd(9)} ${nivel}  (custo ${virgula(c.custo)})`)
 }
 console.log('')

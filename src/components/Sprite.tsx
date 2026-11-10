@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { FERREIROS, type FerreiroId } from '../game/ferreiros.ts'
+import { CLASSES, type ClasseId } from '../game/herois.ts'
 import { MATERIAIS, TIPOS_ITEM, type MaterialId, type TipoItem } from '../game/items.ts'
 
 export type SpriteNome =
@@ -15,6 +16,16 @@ export type SpriteNome =
   | 'icone_carvao'
   | 'icone_lingote'
   | 'icone_moeda'
+  | 'icone_lingote_aco'
+  | 'icone_fragmento'
+  | 'icone_reputacao'
+  | 'forno_aco'
+  | 'forno_aco_aceso'
+  | `heroi_${ClasseId}`
+  | `heroi_${ClasseId}_andando`
+  | 'chefe_golem'
+  | 'regiao_vale'
+  | 'regiao_serra'
 
 interface Def {
   /** Largura e altura de UM quadro, em pixels nativos. */
@@ -46,9 +57,22 @@ const SPRITES_FERREIRO = Object.fromEntries(
   ]),
 ) as Record<`ferreiro_${FerreiroId}`, Def>
 
+const COR_CLASSE: Record<ClasseId, string> = { guerreiro: '#8a3b2a', guardia: '#3f5f7a', batedor: '#4d6b3a' }
+
+const SPRITES_HEROI = Object.fromEntries(
+  CLASSES.flatMap((c) => [
+    [`heroi_${c}`, { w: 24, h: 24, cor: COR_CLASSE[c], texto: '#f3e9dc', inicial: c.charAt(0).toUpperCase() } satisfies Def],
+    [
+      `heroi_${c}_andando`,
+      { w: 24, h: 24, cor: COR_CLASSE[c], texto: '#f3e9dc', inicial: c.charAt(0).toUpperCase(), quadros: 4 } satisfies Def,
+    ],
+  ]),
+) as Record<`heroi_${ClasseId}` | `heroi_${ClasseId}_andando`, Def>
+
 const SPRITES: Record<SpriteNome, Def> = {
   ...SPRITES_ITEM,
   ...SPRITES_FERREIRO,
+  ...SPRITES_HEROI,
   bigorna: { w: 32, h: 32, cor: '#5b5662', texto: '#f3e9dc', inicial: 'B' },
   bigorna_batendo: { w: 32, h: 32, cor: '#f29a3a', texto: '#1b1618', inicial: 'B', quadros: 4 },
   mina: { w: 32, h: 32, cor: '#5b5662', texto: '#f3e9dc', inicial: 'M' },
@@ -59,6 +83,14 @@ const SPRITES: Record<SpriteNome, Def> = {
   icone_carvao: { w: 16, h: 16, cor: '#2e2a30', texto: '#f3e9dc', inicial: 'C' },
   icone_lingote: { w: 16, h: 16, cor: '#f29a3a', texto: '#1b1618', inicial: 'L' },
   icone_moeda: { w: 16, h: 16, cor: '#ffd47a', texto: '#1b1618', inicial: 'm' },
+  icone_lingote_aco: { w: 16, h: 16, cor: '#7d8aa0', texto: '#1b1618', inicial: 'A' },
+  icone_fragmento: { w: 16, h: 16, cor: '#c792ff', texto: '#1b1618', inicial: 'F' },
+  icone_reputacao: { w: 16, h: 16, cor: '#6fb1ff', texto: '#1b1618', inicial: 'R' },
+  forno_aco: { w: 32, h: 32, cor: '#5b6677', texto: '#f3e9dc', inicial: 'A' },
+  forno_aco_aceso: { w: 32, h: 32, cor: '#f29a3a', texto: '#1b1618', inicial: 'A', quadros: 4 },
+  chefe_golem: { w: 48, h: 48, cor: '#4a3f45', texto: '#f3e9dc', inicial: 'G' },
+  regiao_vale: { w: 96, h: 32, cor: '#3f5a3a', texto: '#f3e9dc', inicial: 'Vale' },
+  regiao_serra: { w: 96, h: 32, cor: '#4a4f5c', texto: '#f3e9dc', inicial: 'Serra' },
 }
 
 const urlDe = (nome: SpriteNome) => `${import.meta.env.BASE_URL}sprites/${nome}.png`

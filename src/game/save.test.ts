@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { SAVE_VERSION } from './constants.ts'
 import { desserializar, migrar, serializar, type Migracoes } from './save.ts'
-import { estadoInicial } from './state.ts'
+import { estadoInicial, type GameState } from './state.ts'
 
 describe('save', () => {
   it('ida e volta preserva o estado', () => {
-    const s = { ...estadoInicial(123), moedas: 42.5, niveis: { mina: 7, carvoaria: 3, fornalha: 2, bigorna: 0 } }
+    const s = { ...estadoInicial(123), moedas: 42.5, niveis: { mina: 7, carvoaria: 3, fornalha: 2, bigorna: 0, forno: 0 } }
     expect(desserializar(serializar(s))).toEqual(s)
   })
 
@@ -13,7 +13,7 @@ describe('save', () => {
     expect(desserializar('{nao eh json')).toBeNull()
     expect(desserializar('null')).toBeNull()
     expect(desserializar(JSON.stringify({ ...estadoInicial(0), moedas: 'x' }))).toBeNull()
-    const nivelZero = { ...estadoInicial(0), niveis: { mina: 0, carvoaria: 1, fornalha: 1, bigorna: 0 } }
+    const nivelZero = { ...estadoInicial(0), niveis: { mina: 0, carvoaria: 1, fornalha: 1, bigorna: 0, forno: 0 } }
     expect(desserializar(JSON.stringify(nivelZero))).toBeNull()
   })
 
@@ -44,15 +44,15 @@ describe('save', () => {
       version: 1,
       lastTick: 1_700_000_000_000,
       niveis: { mina: 9, carvoaria: 5, fornalha: 4 },
-      recursos: { minerio: 12.5, carvao: 3, lingote: 7 },
+      recursos: { minerio: 12.5, carvao: 3, lingote: 7, aco: 0 },
       moedas: 321.5,
       moedasGanhas: 4000,
     }
     const s = desserializar(JSON.stringify(v1))
     expect(s).not.toBeNull()
     expect(s!.version).toBe(SAVE_VERSION)
-    expect(s!.niveis).toEqual({ mina: 9, carvoaria: 5, fornalha: 4, bigorna: 0 })
-    expect(s!.recursos).toEqual(v1.recursos)
+    expect(s!.niveis).toEqual({ mina: 9, carvoaria: 5, fornalha: 4, bigorna: 0, forno: 0 })
+    expect(s!.recursos).toEqual({ ...v1.recursos, aco: 0 })
     expect(s!.moedas).toBe(321.5)
     expect(s!.moedasGanhas).toBe(4000)
     expect(s!.itens).toEqual([])
@@ -72,10 +72,10 @@ describe('save', () => {
     const base = estadoInicial(5, 99)
     const s = {
       ...base,
-      niveis: { ...base.niveis, bigorna: 3 },
+      niveis: { ...base.niveis, bigorna: 3, forno: 0 },
       itens: [{ id: 4, tipo: 'elmo', material: 'ferro', qualidade: 'raro', ferreiro: 'Dona Cida', valor: 75, pontuacao: 52 }],
       proximoIdItem: 5,
-      fila: ['espada', 'escudo'],
+      fila: [{ receita: 'espada', material: 'ferro' }, { receita: 'escudo', material: 'aco' }],
       automatico: true,
       ultimaReceita: 'escudo',
       forja: { receita: 'espada', material: 'ferro', progresso: 0.4, aleatorio: 13, alvo: 0.6, duplo: true, batida: 'bom', minigame: 'feito' },
@@ -93,5 +93,107 @@ describe('save', () => {
   it('item com qualidade inexistente invalida o save', () => {
     const s = { ...estadoInicial(0), itens: [{ id: 1, tipo: 'espada', material: 'ferro', qualidade: 'mitico', ferreiro: 'x', valor: 1, pontuacao: 1 }] }
     expect(desserializar(JSON.stringify(s))).toBeNull()
+  })
+
+  it('migra o save da fatia 2 (v2) para a v3 sem perder nada', () => {
+    const item = { id: 4, tipo: 'elmo', material: 'ferro', qualidade: 'raro', ferreiro: 'Dona Cida', valor: 75, pontuacao: 52 }
+    const v2 = {
+      version: 2,
+      lastTick: 1_700_000_000_000,
+      niveis: { mina: 12, carvoaria: 9, fornalha: 8, bigorna: 6 },
+      recursos: { minerio: 10, carvao: 5, lingote: 33 },
+      moedas: 9999.5,
+      moedasGanhas: 50_000,
+      rng: 424242,
+      itens: [item],
+      limiteInventario: 30,
+      proximoIdItem: 5,
+      ferreiros: estadoInicial(0).ferreiros,
+      forja: null,
+      fila: ['espada', 'escudo'],
+      automatico: true,
+      ultimaReceita: 'escudo',
+    }
+    const s = desserializar(JSON.stringify(v2))
+    expect(s).not.toBeNull()
+    expect(s!.version).toBe(3)
+    // o que já existia continua igual
+    expect(s!.niveis).toEqual({ ...v2.niveis, forno: 0 })
+    expect(s!.recursos).toEqual({ ...v2.recursos, aco: 0 })
+    expect(s!.moedas).toBe(9999.5)
+    expect(s!.rng).toBe(424242)
+    expect(s!.itens).toEqual([item])
+    expect(s!.automatico).toBe(true)
+    expect(s!.ultimaReceita).toBe('escudo')
+    // a fila ganha o material (tudo ferro)
+    expect(s!.fila).toEqual([
+      { receita: 'espada', material: 'ferro' },
+      { receita: 'escudo', material: 'ferro' },
+    ])
+    // o que é novo nasce vazio
+    expect(s!.ultimoMaterial).toBe('ferro')
+    expect(s!.herois).toEqual([])
+    expect(s!.expedicoes).toEqual([])
+    expect(s!.reputacao).toBe(0)
+    expect(s!.fragmentos).toBe(0)
+    expect(s!.chefesDerrotados).toEqual([])
+    expect(s!.proximoIdHeroi).toBe(1)
+    // e o resultado volta a ser lido sem migração
+    expect(desserializar(serializar(s!))).toEqual(s)
+  })
+
+  it('v2 corrompido continua sendo rejeitado', () => {
+    expect(desserializar(JSON.stringify({ version: 2, lastTick: 0, niveis: {}, recursos: {} }))).toBeNull()
+  })
+
+  it('ida e volta com heróis equipados, expedição em andamento, reputação e Golem derrotado', () => {
+    const base = estadoInicial(5, 99)
+    const item = { id: 7, tipo: 'machado', material: 'aco', qualidade: 'epico', ferreiro: 'Mestre Odair', valor: 400, pontuacao: 75 }
+    const s: GameState = {
+      ...base,
+      niveis: { ...base.niveis, forno: 3 },
+      recursos: { ...base.recursos, aco: 12.5 },
+      ultimoMaterial: 'aco',
+      herois: [
+        {
+          id: 1,
+          nome: 'Bento',
+          classe: 'guerreiro',
+          nivel: 4,
+          xp: 12.5,
+          equipamento: { arma: item as GameState['itens'][number], escudo: null, armadura: null, elmo: null },
+        },
+        { id: 2, nome: 'Dalva', classe: 'guardia', nivel: 1, xp: 0, equipamento: { arma: null, escudo: null, armadura: null, elmo: null } },
+      ],
+      proximoIdHeroi: 3,
+      expedicoes: [
+        { id: 3, heroi: 2, tipo: 'moinho', inicio: 1000, fim: 601_000, sucesso: false, chance: 0.4, moedas: 12, xp: 10, reputacao: 0, fragmentos: 0 },
+      ],
+      proximoIdExpedicao: 4,
+      reputacao: 163,
+      fragmentos: 6,
+      chefesDerrotados: ['golem'],
+    }
+    expect(desserializar(serializar(s))).toEqual(s)
+  })
+
+  it('item no espaço errado do herói invalida o save', () => {
+    const base = estadoInicial(5, 99)
+    const item = { id: 7, tipo: 'escudo', material: 'ferro', qualidade: 'comum', ferreiro: 'x', valor: 1, pontuacao: 1 }
+    const s = {
+      ...base,
+      herois: [{ id: 1, nome: 'Bento', classe: 'guerreiro', nivel: 1, xp: 0, equipamento: { arma: item, escudo: null, armadura: null, elmo: null } }],
+      proximoIdHeroi: 2,
+    }
+    expect(desserializar(JSON.stringify(s))).toBeNull()
+  })
+
+  it('expedição de herói que não existe é descartada sem corromper o resto', () => {
+    const base = estadoInicial(5, 99)
+    const s = {
+      ...base,
+      expedicoes: [{ id: 1, heroi: 9, tipo: 'trilha', inicio: 0, fim: 1, sucesso: true, chance: 1, moedas: 1, xp: 1, reputacao: 5, fragmentos: 0 }],
+    }
+    expect(desserializar(JSON.stringify(s))!.expedicoes).toEqual([])
   })
 })

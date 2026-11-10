@@ -146,6 +146,15 @@ p {
   white-space: nowrap;
 }
 
+.barra-recursos.compacta .chip {
+  gap: 4px;
+  min-height: 32px;
+}
+
+.barra-recursos.compacta .chip-valor {
+  font-size: 17px;
+}
+
 .chip-moedas .chip-valor {
   color: var(--amarelo);
 }
@@ -1026,5 +1035,720 @@ p {
   }
   .faiscas {
     display: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Fatia 3: Guilda, Mapa, chefe e replay.                              */
+/* ------------------------------------------------------------------ */
+
+/* Selo de expedição que voltou, na aba Mapa. */
+.aba-nome {
+  position: relative;
+}
+
+.aba-selo {
+  position: absolute;
+  top: -6px;
+  right: -16px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--amarelo);
+  color: var(--carvao);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Heróis. */
+.herois {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.heroi {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-left-width: 6px;
+  border-left-color: var(--aco);
+}
+
+.heroi-topo {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.heroi-arte {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--carvao);
+  border: 1px solid var(--aco);
+  border-radius: var(--raio);
+  flex: none;
+}
+
+.heroi-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.heroi-texto h3,
+.chefe-texto h3 {
+  margin: 0;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.heroi-classe {
+  color: var(--amarelo);
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.heroi-xp {
+  font-size: 14px;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.atributos {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.atributo {
+  background: var(--carvao);
+  border: 1px solid var(--aco);
+  border-radius: 6px;
+  padding: 4px 6px;
+  text-align: center;
+}
+
+.atributo dt {
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+
+.atributo dd {
+  margin: 0;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.heroi-slots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.heroi-slot,
+.slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 2px;
+  background: var(--carvao);
+  border: 2px solid var(--aco-desligado);
+  border-radius: var(--raio);
+  font-size: 14px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.heroi-slot small,
+.slot small {
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+
+.slot-vazio {
+  width: 32px;
+  height: 32px;
+  border: 2px dashed var(--aco);
+  border-radius: 4px;
+}
+
+/* Folha de equipar. */
+.slots {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.slot {
+  min-height: 78px;
+  cursor: pointer;
+  touch-action: manipulation;
+  color: var(--texto);
+}
+
+.slot.marcado {
+  border-color: var(--amarelo);
+  background: #3a353d;
+}
+
+.sheet-subtitulo {
+  margin: 4px 0 0;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.item-equipar {
+  grid-template-columns: 32px 1fr;
+  align-items: start;
+}
+
+.item-equipar .item-texto {
+  gap: 2px;
+}
+
+.item-acao {
+  margin-top: 6px;
+  width: 100%;
+}
+
+.diferenca {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+.diferenca .sobe {
+  color: #7bd88f;
+}
+
+.diferenca .desce {
+  color: #ff8f7a;
+}
+
+.diferenca.igual {
+  color: var(--texto-suave);
+  font-weight: 500;
+}
+
+/* Recrutar. */
+.classes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.classe {
+  min-height: 56px;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  grid-template-areas:
+    'arte nome'
+    'arte resumo';
+  column-gap: 10px;
+  align-items: center;
+  padding: 6px 10px;
+  text-align: left;
+  background: var(--carvao);
+  border: 2px solid var(--aco-desligado);
+  border-radius: var(--raio);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.classe > :first-child {
+  grid-area: arte;
+}
+
+.classe.marcada {
+  border-color: var(--amarelo);
+  background: #3a353d;
+}
+
+.classe-nome {
+  grid-area: nome;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.classe-resumo {
+  grid-area: resumo;
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+
+.botao-recrutar {
+  justify-content: space-between;
+  padding: 6px 16px;
+}
+
+/* Mapa. */
+.regiao.fechada {
+  border-color: var(--aco-desligado);
+}
+
+.regiao-banner {
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--raio);
+  border: 1px solid var(--aco);
+  background: var(--carvao);
+}
+
+.regiao.fechada .regiao-banner {
+  filter: saturate(0.3) brightness(0.7);
+}
+
+.regiao-banner .sprite {
+  max-width: 100%;
+}
+
+.expedicoes,
+.andamentos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.expedicao {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--carvao);
+}
+
+.expedicao.fechada {
+  opacity: 0.85;
+}
+
+.expedicao-topo h4 {
+  margin: 0;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 21px;
+  line-height: 1.1;
+}
+
+.expedicao-meta {
+  font-size: 15px;
+  color: var(--texto-suave);
+}
+
+.chance {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 16px;
+}
+
+.chance strong {
+  font-family: var(--fonte-titulo);
+  font-size: 20px;
+  color: var(--amarelo);
+  font-variant-numeric: tabular-nums;
+}
+
+.loot-esperado,
+.loot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.loot-esperado > span,
+.loot > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.andamento {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 10px;
+  border-left-width: 6px;
+  border-left-color: var(--aco);
+}
+
+.andamento.quente {
+  border-left-color: var(--laranja);
+}
+
+.andamento.pronto {
+  border-left-color: var(--amarelo);
+}
+
+.andamento.falhou {
+  border-left-color: var(--aco);
+}
+
+.andamento-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.andamento-titulo {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.1;
+}
+
+.andamento-coletar {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.botao-pequeno {
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.resultado-ok {
+  color: var(--amarelo);
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.resultado-falha,
+.modal-lista strong.falhou {
+  color: var(--laranja);
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.escolha-heroi {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.escolha {
+  min-height: 72px;
+  min-width: 104px;
+  flex: 1 0 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px;
+  background: var(--carvao);
+  border: 2px solid var(--aco-desligado);
+  border-radius: var(--raio);
+  cursor: pointer;
+  touch-action: manipulation;
+  font-weight: 600;
+}
+
+.escolha small {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+
+.escolha.marcada {
+  border-color: var(--amarelo);
+  background: #3a353d;
+}
+
+/* Chefe. */
+.chefe {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-color: var(--brasa);
+  border-left-width: 6px;
+}
+
+.chefe-topo {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.chefe-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.equipe {
+  border: 1px solid var(--aco);
+  border-radius: var(--raio);
+  margin: 0;
+  padding: 6px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.equipe legend {
+  padding: 0 6px;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.equipe-membro {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.equipe-membro.ocupado {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.equipe-membro input {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--laranja);
+}
+
+.equipe-membro small {
+  display: block;
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+
+.previsao {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.previsao.vitoria {
+  color: var(--amarelo);
+}
+
+.previsao.recuo {
+  color: var(--laranja);
+}
+
+/* Replay do combate. */
+.combate {
+  align-items: stretch;
+}
+
+.combate-rodada {
+  margin: 0;
+  color: var(--texto-suave);
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.arena {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 8px;
+  background: var(--carvao);
+  border: 1px solid var(--aco);
+  border-radius: var(--raio);
+  min-height: 190px;
+}
+
+.arena-lado {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.arena-chefe {
+  align-items: center;
+}
+
+.lutador {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.lutador-arte {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.lutador.caido .lutador-arte {
+  filter: grayscale(1) brightness(0.6);
+}
+
+.lutador-nome {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.lutador-pv {
+  font-size: 13px;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.barra-pv {
+  width: 100%;
+  max-width: 130px;
+  height: 10px;
+  border-radius: 5px;
+}
+
+.barra-pv-cheia {
+  height: 100%;
+  background: var(--laranja);
+  transition: width 120ms linear;
+}
+
+.lutador.chefe .barra-pv-cheia {
+  background: var(--brasa);
+}
+
+.dano-numero {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--fonte-titulo);
+  font-weight: 800;
+  font-size: 24px;
+  color: var(--amarelo);
+  text-shadow: 0 2px 0 var(--carvao);
+  pointer-events: none;
+  animation: dano-sobe 600ms ease-out forwards;
+}
+
+@keyframes dano-sobe {
+  from {
+    opacity: 1;
+    top: 8px;
+  }
+  to {
+    opacity: 0;
+    top: -26px;
+  }
+}
+
+.narracao {
+  margin: 0;
+  min-height: 1.4em;
+  text-align: center;
+  color: var(--texto-suave);
+  font-size: 16px;
+}
+
+.combate-resumo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Material da bigorna (ferro ou aço). */
+.materiais {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.material {
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  grid-template-areas:
+    'icone nome'
+    'icone estoque';
+  column-gap: 8px;
+  align-items: center;
+  padding: 4px 10px;
+  text-align: left;
+  background: var(--carvao);
+  border: 2px solid var(--aco-desligado);
+  border-radius: var(--raio);
+  cursor: pointer;
+  touch-action: manipulation;
+  font-weight: 600;
+}
+
+.material > :first-child {
+  grid-area: icone;
+}
+
+.material small {
+  grid-area: estoque;
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+
+.material.marcado {
+  border-color: var(--amarelo);
+  background: #3a353d;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dano-numero {
+    animation: none;
+    display: none;
+  }
+  .barra-pv-cheia {
+    transition: none;
   }
 }

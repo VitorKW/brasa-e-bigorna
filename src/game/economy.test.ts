@@ -32,7 +32,7 @@ describe('comprar upgrade', () => {
 })
 
 describe('vender', () => {
-  const com = { ...estadoInicial(0), recursos: { minerio: 10, carvao: 10, lingote: 3 }, moedas: 0 }
+  const com = { ...estadoInicial(0), recursos: { minerio: 10, carvao: 10, lingote: 3, aco: 0 }, moedas: 0 }
 
   it('vende tudo pelos preços do GDD', () => {
     expect(vender(com, 'minerio').ganho).toBeCloseTo(2, 9)

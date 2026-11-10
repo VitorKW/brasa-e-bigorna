@@ -26,7 +26,7 @@ export const FERREIROS_DEF: Record<FerreiroId, DefFerreiro> = {
   iara: { nome: 'Iara do Malho', estacoes: ['bigorna'], passiva: '10 % de chance de forjar 2 itens' },
   odair: {
     nome: 'Mestre Odair',
-    estacoes: ['mina', 'carvoaria', 'fornalha', 'bigorna'],
+    estacoes: ['mina', 'carvoaria', 'fornalha', 'forno', 'bigorna'],
     passiva: '+5 % em tudo da estação (+10 % no nível 10)',
   },
 }
@@ -51,7 +51,7 @@ export const FERREIRO = {
  * Divisor de XP por estação `[suposição]`: 1 XP por item na bigorna; nas demais, 1 XP a cada
  * N unidades produzidas, para o ferreiro subir num ritmo parecido ao da bigorna (~1 XP/10 s).
  */
-export const XP_DIVISOR = { mina: 40, carvoaria: 20, fornalha: 10 } as const
+export const XP_DIVISOR = { mina: 40, carvoaria: 20, fornalha: 10, forno: 10 } as const
 
 export function quantosContratados(s: GameState): number {
   return FERREIROS.filter((id) => s.ferreiros[id].contratado).length

@@ -1,17 +1,22 @@
-import { analisarCadeia } from '../game/chain.ts'
+import { analisarCadeia, taxas } from '../game/chain.ts'
 import {
+  FORNO,
   NIVEIS_MARCO,
   producaoCarvoaria,
   producaoMina,
   velocidadeFornalha,
+  velocidadeForno,
   type EstacaoProducao,
 } from '../game/constants.ts'
+import { chefeDerrotado } from '../game/chefe.ts'
 import { custoProximoNivel, podeComprar } from '../game/economy.ts'
+import { formatarCusto } from '../game/format.ts'
 import { multiplicadorEstacao } from '../game/ferreiros.ts'
 import { useGame } from '../store.ts'
 import { BigornaCard } from './BigornaCard.tsx'
 import { FerreirosPanel } from './FerreirosPanel.tsx'
 import { ItensPanel } from './ItensPanel.tsx'
+import { Sprite } from './Sprite.tsx'
 import { StationCard } from './StationCard.tsx'
 
 const proximoMarco = (n: number): number | null => NIVEIS_MARCO.find((m) => m > n) ?? null
@@ -95,6 +100,8 @@ export function ForgeScreen() {
           gargalo={gargalo === 'fornalha'}
         />
 
+        <FornoDeAco />
+
         <Conector texto="3 a 6 lingotes por item" ativo={bigornaTrabalhando} />
         <BigornaCard />
       </section>
@@ -108,4 +115,75 @@ export function ForgeScreen() {
 function ItensSecao() {
   const nivel = useGame((s) => s.jogo.niveis.bigorna)
   return nivel >= 1 ? <ItensPanel /> : null
+}
+
+/** Forno de aço: aparece depois do Golem. Nível 0 = ainda por construir. */
+function FornoDeAco() {
+  const jogo = useGame((s) => s.jogo)
+  const melhorar = useGame((s) => s.melhorar)
+  if (!chefeDerrotado(jogo, 'golem')) return null
+  const n = jogo.niveis.forno
+  const custo = custoProximoNivel(jogo, 'forno')
+
+  if (n < 1) {
+    return (
+      <>
+        <Conector texto="1 lingote e 2 carvões por aço" ativo={false} />
+        <article className="estacao painel fria" aria-label="Forno de aço, por construir">
+          <div className="estacao-arte">
+            <Sprite nome="forno_aco" escala={2} rotulo="Forno de aço" />
+          </div>
+          <div className="estacao-info">
+            <div className="estacao-titulo">
+              <h2>Forno de aço</h2>
+              <span className="nivel">por construir</span>
+            </div>
+            <p className="estacao-aviso">O Golem caiu. A Serra Cinzenta ensinou o segredo do aço.</p>
+            <p className="estacao-dica">Itens de aço valem 4 vezes mais e ganham +10 de qualidade.</p>
+          </div>
+          <button
+            type="button"
+            className="botao botao-primario botao-melhorar"
+            disabled={!podeComprar(jogo, 'forno')}
+            onClick={() => melhorar('forno')}
+            aria-label={`Construir o Forno de aço por ${formatarCusto(custo)} moedas`}
+          >
+            <span>Construir forno</span>
+            <span className="botao-custo">
+              <Sprite nome="icone_moeda" escala={1} />
+              {formatarCusto(custo)}
+            </span>
+          </button>
+        </article>
+      </>
+    )
+  }
+
+  const t = taxas(jogo)
+  const cheio = jogo.recursos.aco >= FORNO.estoqueMaximo - 0.01
+  const parado = cheio || t.aco <= 1e-9
+  const capacidade = velocidadeForno(n) * multiplicadorEstacao(jogo, 'forno')
+  return (
+    <>
+      <Conector texto="1 lingote e 2 carvões por aço" ativo={!parado} />
+      <StationCard
+        nome="Forno de aço"
+        sprite="forno_aco"
+        spriteAceso="forno_aco_aceso"
+        animada
+        nivel={n}
+        saida={{ icone: 'icone_lingote_aco', rotulo: 'aço', porSegundo: Math.min(capacidade, t.aco > 0 ? t.aco : capacidade) }}
+        proximaSaida={velocidadeForno(n + 1) * multiplicadorEstacao(jogo, 'forno')}
+        proximoMarco={proximoMarco(n)}
+        custo={custo}
+        podeComprar={podeComprar(jogo, 'forno')}
+        onMelhorar={() => melhorar('forno')}
+        parada={parado}
+        mensagemParada={
+          cheio ? 'O forno parou: o estoque de aço está cheio.' : 'O forno esfriou. Faltam lingotes de ferro ou carvão.'
+        }
+        gargalo={false}
+      />
+    </>
+  )
 }

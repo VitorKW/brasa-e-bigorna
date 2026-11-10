@@ -8,6 +8,8 @@ interface Props {
   sprite: SpriteNome
   /** Quadros da faixa animada quando a estação está acesa. */
   animada?: boolean
+  /** Sprite aceso (padrão: a fornalha). */
+  spriteAceso?: SpriteNome
   nivel: number
   /** O que a estação entrega e quanto por segundo. */
   saida: { icone: SpriteNome; rotulo: string; porSegundo: number }
@@ -35,7 +37,7 @@ export function StationCard(p: Props) {
     return () => window.clearInterval(id)
   }, [p.parada, p.saida.porSegundo, adicionar])
 
-  const spriteAtual: SpriteNome = p.animada && !p.parada ? 'fornalha_acesa' : p.sprite
+  const spriteAtual: SpriteNome = p.animada && !p.parada ? (p.spriteAceso ?? 'fornalha_acesa') : p.sprite
   const classe = ['estacao', 'painel', p.parada ? 'fria' : 'quente', p.gargalo ? 'gargalo' : '']
     .filter(Boolean)
     .join(' ')

@@ -7,9 +7,18 @@ import {
   removerDaFila as removerDaFilaRegra,
   type Forjado,
 } from './game/bigorna.ts'
+import { lutarChefe, type ChefeId, type RecompensaChefe, type ResultadoCombate } from './game/chefe.ts'
+import {
+  coletar as coletarRegra,
+  coletarTodas as coletarTodasRegra,
+  partir,
+  type Coleta,
+  type ExpedicaoId,
+} from './game/expedicoes.ts'
+import { desequipar as desequiparRegra, equipar as equiparRegra, recrutar as recrutarRegra, type ClasseId } from './game/herois.ts'
 import { alocar as alocarRegra, contratar as contratarRegra, type FerreiroId } from './game/ferreiros.ts'
 import { venderItem as venderItemRegra, venderPorQualidade } from './game/inventario.ts'
-import type { Qualidade, ReceitaId } from './game/items.ts'
+import type { MaterialId, Qualidade, ReceitaId, Slot } from './game/items.ts'
 import { semente } from './game/rng.ts'
 import { comprarUpgrade, vender as venderRegra } from './game/economy.ts'
 import { applyOffline, type ResumoOffline } from './game/offline.ts'
@@ -47,7 +56,18 @@ function gravarSave(estado: GameState): void {
   }
 }
 
+export type AbaId = 'forja' | 'guilda' | 'mapa'
+
+/** Resultado de uma luta contra o chefe, para o replay. A recompensa já foi aplicada ao jogo. */
+export interface CombateAtivo {
+  id: number
+  chefe: ChefeId
+  resultado: ResultadoCombate
+  recompensa: RecompensaChefe | null
+}
+
 interface Store {
+  aba: AbaId
   jogo: GameState
   resumoOffline: ResumoOffline | null
   /** Último ganho de venda, para a UI mostrar o "+N" (id muda a cada venda). */
@@ -56,10 +76,15 @@ interface Store {
   ultimoForjado: { id: number; forjado: Forjado } | null
   /** Id do overlay da batida aberto agora (null = fechado). Só UI; não vai para o save. */
   batidaAtiva: number | null
+  /** Combate em replay (null = nenhum). Só UI; não vai para o save. */
+  combate: CombateAtivo | null
+  /** Última coleta de expedições (a UI faz os números subirem). */
+  ultimaColeta: { id: number; coleta: Coleta } | null
+  irPara: (aba: AbaId) => void
   avancar: (now: number) => void
   melhorar: (estacao: EstacaoId) => void
   vender: (recurso: RecursoId | 'tudo') => void
-  forjar: (receita: ReceitaId, comBatida?: boolean) => void
+  forjar: (receita: ReceitaId, comBatida?: boolean, material?: MaterialId) => void
   removerDaFila: (indice: number) => void
   alternarAutomatico: () => void
   /** Posição do toque (0..1) ou null se o tempo acabou. */
@@ -71,6 +96,14 @@ interface Store {
   venderItens: (qualidade: Qualidade | 'todas') => void
   fecharResumo: () => void
   salvar: () => void
+  recrutar: (classe: ClasseId) => void
+  equipar: (heroiId: number, itemId: number) => void
+  desequipar: (heroiId: number, slot: Slot) => void
+  enviarExpedicao: (heroiId: number, tipo: ExpedicaoId) => void
+  coletarExpedicao: (id: number) => void
+  coletarTodas: () => void
+  lutar: (chefe: ChefeId, heroiIds: number[]) => void
+  fecharCombate: () => void
 }
 
 function iniciar(): Pick<Store, 'jogo' | 'resumoOffline'> {
@@ -89,12 +122,19 @@ function iniciar(): Pick<Store, 'jogo' | 'resumoOffline'> {
 let contadorGanho = 0
 let contadorForjado = 0
 let contadorBatida = 0
+let contadorColeta = 0
+let contadorCombate = 0
 
 export const useGame = create<Store>((set, get) => ({
+  aba: 'forja',
   ...iniciar(),
   ultimoGanho: null,
   ultimoForjado: null,
   batidaAtiva: null,
+  combate: null,
+  ultimaColeta: null,
+
+  irPara: (aba) => set({ aba }),
 
   avancar: (now) => {
     const { jogo } = get()
@@ -130,7 +170,7 @@ export const useGame = create<Store>((set, get) => ({
   vender: (recurso) => {
     let estado = get().jogo
     let total = 0
-    const alvos: RecursoId[] = recurso === 'tudo' ? ['minerio', 'carvao', 'lingote'] : [recurso]
+    const alvos: RecursoId[] = recurso === 'tudo' ? ['minerio', 'carvao', 'lingote', 'aco'] : [recurso]
     for (const r of alvos) {
       const res = venderRegra(estado, r, 'tudo')
       estado = res.estado
@@ -139,9 +179,9 @@ export const useGame = create<Store>((set, get) => ({
     if (total > 0) set({ jogo: estado, ultimoGanho: { id: ++contadorGanho, valor: total } })
   },
 
-  forjar: (receita, comBatida = false) => {
+  forjar: (receita, comBatida = false, material = 'ferro') => {
     const { jogo } = get()
-    const novo = forjarRegra(jogo, receita, comBatida)
+    const novo = forjarRegra(jogo, receita, comBatida, material)
     if (novo === jogo) return
     set({ jogo: novo, batidaAtiva: comBatida && novo.forja?.minigame === 'pendente' ? ++contadorBatida : null })
   },
@@ -179,4 +219,53 @@ export const useGame = create<Store>((set, get) => ({
   fecharResumo: () => set({ resumoOffline: null }),
 
   salvar: () => gravarSave(get().jogo),
+
+  recrutar: (classe) => {
+    const { jogo } = get()
+    const novo = recrutarRegra(jogo, classe)
+    if (novo !== jogo) set({ jogo: novo })
+  },
+
+  equipar: (heroiId, itemId) => {
+    const { jogo } = get()
+    const novo = equiparRegra(jogo, heroiId, itemId)
+    if (novo !== jogo) set({ jogo: novo })
+  },
+
+  desequipar: (heroiId, slot) => {
+    const { jogo } = get()
+    const novo = desequiparRegra(jogo, heroiId, slot)
+    if (novo !== jogo) set({ jogo: novo })
+  },
+
+  // O relógio das expedições é o do jogo (lastTick, atualizado a cada 200 ms), o mesmo que decide a volta.
+  enviarExpedicao: (heroiId, tipo) => {
+    const { jogo } = get()
+    const novo = partir(jogo, heroiId, tipo, Date.now())
+    if (novo !== jogo) set({ jogo: novo })
+  },
+
+  coletarExpedicao: (id) => {
+    const { jogo } = get()
+    const r = coletarRegra(jogo, id, Date.now())
+    if (r.estado !== jogo) set({ jogo: r.estado, ultimaColeta: { id: ++contadorColeta, coleta: r.coleta } })
+  },
+
+  coletarTodas: () => {
+    const { jogo } = get()
+    const r = coletarTodasRegra(jogo, Date.now())
+    if (r.estado !== jogo) set({ jogo: r.estado, ultimaColeta: { id: ++contadorColeta, coleta: r.coleta } })
+  },
+
+  lutar: (chefe, heroiIds) => {
+    const { jogo } = get()
+    const r = lutarChefe(jogo, chefe, heroiIds)
+    if (r.resultado.equipe.length === 0) return
+    set({
+      jogo: r.estado,
+      combate: { id: ++contadorCombate, chefe, resultado: r.resultado, recompensa: r.recompensa },
+    })
+  },
+
+  fecharCombate: () => set({ combate: null }),
 }))

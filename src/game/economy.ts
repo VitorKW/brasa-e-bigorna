@@ -1,3 +1,4 @@
+import { chefeDerrotado } from './chefe.ts'
 import { PRECO_VENDA, custoUpgrade, type EstacaoId, type RecursoId } from './constants.ts'
 import type { GameState } from './state.ts'
 
@@ -5,14 +6,19 @@ export function custoProximoNivel(s: GameState, estacao: EstacaoId): number {
   return custoUpgrade(estacao, s.niveis[estacao])
 }
 
+/** O Forno de aço só existe depois do Golem; as demais estações estão sempre disponíveis. */
+export function estacaoLiberada(s: GameState, estacao: EstacaoId): boolean {
+  return estacao !== 'forno' || chefeDerrotado(s, 'golem')
+}
+
 export function podeComprar(s: GameState, estacao: EstacaoId): boolean {
-  return s.moedas >= custoProximoNivel(s, estacao)
+  return estacaoLiberada(s, estacao) && s.moedas >= custoProximoNivel(s, estacao)
 }
 
 /** Compra 1 nível. Sem moeda suficiente devolve o MESMO estado (sem efeito). */
 export function comprarUpgrade(s: GameState, estacao: EstacaoId): GameState {
   const custo = custoProximoNivel(s, estacao)
-  if (s.moedas < custo) return s
+  if (!estacaoLiberada(s, estacao) || s.moedas < custo) return s
   return {
     ...s,
     moedas: s.moedas - custo,

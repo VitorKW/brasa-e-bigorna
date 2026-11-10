@@ -7,17 +7,20 @@ const ITENS: { id: RecursoId; rotulo: string; icone: SpriteNome }[] = [
   { id: 'minerio', rotulo: 'minério', icone: 'icone_minerio' },
   { id: 'carvao', rotulo: 'carvão', icone: 'icone_carvao' },
   { id: 'lingote', rotulo: 'lingotes', icone: 'icone_lingote' },
+  { id: 'aco', rotulo: 'aço', icone: 'icone_lingote_aco' },
 ]
 
 export function SellPanel() {
   const recursos = useGame((s) => s.jogo.recursos)
+  const temAco = useGame((s) => s.jogo.niveis.forno >= 1 || s.jogo.recursos.aco > 0)
+  const lista = ITENS.filter((i) => i.id !== 'aco' || temAco)
   const vender = useGame((s) => s.vender)
-  const valorTotal = ITENS.reduce((t, i) => t + recursos[i.id] * PRECO_VENDA[i.id], 0)
+  const valorTotal = lista.reduce((t, i) => t + recursos[i.id] * PRECO_VENDA[i.id], 0)
 
   return (
     <section className="vender painel" aria-label="Vender">
       <div className="vender-grade">
-        {ITENS.map((i) => (
+        {lista.map((i) => (
           <button
             key={i.id}
             type="button"

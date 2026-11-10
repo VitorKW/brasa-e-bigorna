@@ -10,11 +10,12 @@ import {
   qualidadeDe,
   valorItem,
   type Item,
+  type MaterialId,
   type ReceitaId,
   type ResultadoBatida,
 } from './items.ts'
 import { inteiro, proximo } from './rng.ts'
-import type { Forja, GameState } from './state.ts'
+import type { Forja, GameState, PedidoForja } from './state.ts'
 
 export const FILA_MAX = 5
 
@@ -24,10 +25,15 @@ export interface Forjado {
   batida: ResultadoBatida
 }
 
-export type MotivoBloqueio = 'bloqueada' | 'ocupada' | 'sem-lingote' | 'inventario-cheio'
+export type MotivoBloqueio = 'bloqueada' | 'ocupada' | 'sem-lingote' | 'sem-forno' | 'inventario-cheio'
 
 export function inventarioCheio(s: GameState): boolean {
   return s.itens.length >= s.limiteInventario
+}
+
+/** Lingotes disponíveis do material (ferro = lingote de ferro, aço = lingote de aço). */
+export function estoqueDe(s: GameState, material: MaterialId): number {
+  return material === 'aco' ? s.recursos.aco : s.recursos.lingote
 }
 
 /** Segundos para forjar a receita com a bigorna e o ferreiro atuais. */
@@ -37,10 +43,15 @@ export function tempoForjaAtual(s: GameState, receita: ReceitaId): number {
 }
 
 /** Dá para começar agora? (ignora se já há tarefa; veja `forjar` para fila.) */
-export function motivoParaNaoIniciar(s: GameState, receita: ReceitaId): MotivoBloqueio | null {
+export function motivoParaNaoIniciar(
+  s: GameState,
+  receita: ReceitaId,
+  material: MaterialId = 'ferro',
+): MotivoBloqueio | null {
   if (s.niveis.bigorna < 1) return 'bloqueada'
+  if (material === 'aco' && s.niveis.forno < 1) return 'sem-forno'
   if (s.forja) return 'ocupada'
-  if (s.recursos.lingote < RECEITAS[receita].lingotes) return 'sem-lingote'
+  if (estoqueDe(s, material) < RECEITAS[receita].lingotes) return 'sem-lingote'
   if (inventarioCheio(s)) return 'inventario-cheio'
   return null
 }
@@ -51,14 +62,19 @@ export function motivoParaNaoIniciar(s: GameState, receita: ReceitaId): MotivoBl
  * gravado no estado, então fechar o app não permite "tentar de novo" (GDD §4.5).
  * Os 3 sorteios acontecem sempre, mesmo sem Iara, para trocar de ferreiro não "rerrolar".
  */
-export function iniciarTarefa(s: GameState, receita: ReceitaId, comBatida: boolean): GameState {
-  if (motivoParaNaoIniciar(s, receita) !== null) return s
+export function iniciarTarefa(
+  s: GameState,
+  receita: ReceitaId,
+  comBatida: boolean,
+  material: MaterialId = 'ferro',
+): GameState {
+  if (motivoParaNaoIniciar(s, receita, material) !== null) return s
   const a = inteiro(s.rng, ALEATORIO_MAX)
   const b = proximo(a.rng)
   const c = proximo(b.rng)
   const forja: Forja = {
     receita,
-    material: 'ferro',
+    material,
     progresso: 0,
     aleatorio: a.valor,
     alvo: alvoDe(b.valor),
@@ -69,9 +85,13 @@ export function iniciarTarefa(s: GameState, receita: ReceitaId, comBatida: boole
   return {
     ...s,
     rng: c.rng,
-    recursos: { ...s.recursos, lingote: s.recursos.lingote - RECEITAS[receita].lingotes },
+    recursos:
+      material === 'aco'
+        ? { ...s.recursos, aco: s.recursos.aco - RECEITAS[receita].lingotes }
+        : { ...s.recursos, lingote: s.recursos.lingote - RECEITAS[receita].lingotes },
     forja,
     ultimaReceita: receita,
+    ultimoMaterial: material,
   }
 }
 
@@ -79,11 +99,16 @@ export function iniciarTarefa(s: GameState, receita: ReceitaId, comBatida: boole
  * Ação do jogador. Com a bigorna livre começa já; ocupada, "Forjar" entra na fila.
  * "Com batida" só vale para começar agora (o overlay abre na hora), nunca na fila.
  */
-export function forjar(s: GameState, receita: ReceitaId, comBatida = false): GameState {
-  const motivo = motivoParaNaoIniciar(s, receita)
-  if (motivo === null) return iniciarTarefa(s, receita, comBatida)
+export function forjar(
+  s: GameState,
+  receita: ReceitaId,
+  comBatida = false,
+  material: MaterialId = 'ferro',
+): GameState {
+  const motivo = motivoParaNaoIniciar(s, receita, material)
+  if (motivo === null) return iniciarTarefa(s, receita, comBatida, material)
   if (motivo === 'ocupada' && !comBatida && s.fila.length < FILA_MAX) {
-    return { ...s, fila: [...s.fila, receita], ultimaReceita: receita }
+    return { ...s, fila: [...s.fila, { receita, material }], ultimaReceita: receita, ultimoMaterial: material }
   }
   return s
 }
@@ -164,10 +189,12 @@ export function concluir(s: GameState): { estado: GameState; forjados: Forjado[]
   return { estado, forjados: novos.map((item) => ({ item, batida: f.batida })) }
 }
 
-function proximaDaFila(s: GameState): { receita: ReceitaId; daFila: boolean } | null {
+function proximaDaFila(s: GameState): (PedidoForja & { daFila: boolean }) | null {
   const primeira = s.fila[0]
-  if (primeira) return { receita: primeira, daFila: true }
-  if (s.automatico && s.ultimaReceita) return { receita: s.ultimaReceita, daFila: false }
+  if (primeira) return { ...primeira, daFila: true }
+  if (s.automatico && s.ultimaReceita) {
+    return { receita: s.ultimaReceita, material: s.ultimoMaterial, daFila: false }
+  }
   return null
 }
 
@@ -187,8 +214,8 @@ export function avancarBigorna(
   for (let guarda = 0; guarda < 10_000; guarda++) {
     if (!est.forja) {
       const prox = proximaDaFila(est)
-      if (!prox || motivoParaNaoIniciar(est, prox.receita) !== null) break
-      est = iniciarTarefa(est, prox.receita, false)
+      if (!prox || motivoParaNaoIniciar(est, prox.receita, prox.material) !== null) break
+      est = iniciarTarefa(est, prox.receita, false, prox.material)
       if (prox.daFila) est = { ...est, fila: est.fila.slice(1) }
       continue
     }
@@ -217,31 +244,31 @@ export function avancarBigorna(
 }
 
 /** Valor médio de um item da receita hoje (média sobre os 21 aleatórios possíveis, no automático). */
-export function valorEsperadoItem(s: GameState, receita: ReceitaId): number {
+export function valorEsperadoItem(s: GameState, receita: ReceitaId, material: MaterialId = 'ferro'): number {
   const p = passivasBigorna(s)
   let total = 0
   for (let a = 0; a <= ALEATORIO_MAX; a++) {
     const q = calcularQ({
       nivelFerreiro: nivelFerreiroEm(s, 'bigorna'),
       nivelBigorna: s.niveis.bigorna,
-      material: 'ferro',
+      material,
       batida: 'automatico',
       aleatorio: a,
       bonusFixo: p.bonusFixo,
       multiplicador: p.multiplicador,
     })
-    total += valorItem(receita, 'ferro', qualidadeDe(q))
+    total += valorItem(receita, material, qualidadeDe(q))
   }
   return (total / (ALEATORIO_MAX + 1)) * (1 + p.chanceDuplo)
 }
 
 /** Menor e maior Q possíveis hoje (aleatório 0 e 20), no automático. Para a dica da UI. */
-export function faixaQ(s: GameState): { min: number; max: number } {
+export function faixaQ(s: GameState, material: MaterialId = 'ferro'): { min: number; max: number } {
   const p = passivasBigorna(s)
   const base = {
     nivelFerreiro: nivelFerreiroEm(s, 'bigorna'),
     nivelBigorna: s.niveis.bigorna,
-    material: 'ferro' as const,
+    material,
     batida: 'automatico' as const,
     bonusFixo: p.bonusFixo,
     multiplicador: p.multiplicador,

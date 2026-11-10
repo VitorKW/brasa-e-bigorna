@@ -3,6 +3,7 @@ import { motion, useIsPresent, useReducedMotion } from 'motion/react'
 import { OFFLINE } from '../game/constants.ts'
 import { formatar, formatarDuracao } from '../game/format.ts'
 import type { ResumoOffline } from '../game/offline.ts'
+import { DEF_EXPEDICAO } from '../game/expedicoes.ts'
 import { QUALIDADES, rotuloQualidade } from '../game/items.ts'
 import { COR_QUALIDADE } from './qualidade.ts'
 import { Sprite, type SpriteNome } from './Sprite.tsx'
@@ -11,6 +12,7 @@ const LINHAS: { id: keyof ResumoOffline['produzido']; rotulo: string; icone: Spr
   { id: 'minerio', rotulo: 'Minério extraído', icone: 'icone_minerio' },
   { id: 'carvao', rotulo: 'Carvão produzido', icone: 'icone_carvao' },
   { id: 'lingote', rotulo: 'Lingotes fundidos', icone: 'icone_lingote' },
+  { id: 'aco', rotulo: 'Lingotes de aço', icone: 'icone_lingote_aco' },
 ]
 
 export function OfflineModal({ resumo, onFechar }: { resumo: ResumoOffline; onFechar: () => void }) {
@@ -52,7 +54,7 @@ export function OfflineModal({ resumo, onFechar }: { resumo: ResumoOffline; onFe
             ` Você ficou ${formatarDuracao(resumo.segundosAusente)} fora, mas a forja só rende até ${formatarDuracao(OFFLINE.tetoSegundos)} sozinha.`}
         </p>
         <ul className="modal-lista">
-          {LINHAS.map((l) => (
+          {LINHAS.filter((l) => l.id !== 'aco' || resumo.produzido.aco >= 1).map((l) => (
             <li key={l.id}>
               <Sprite nome={l.icone} escala={2} />
               <span>{l.rotulo}</span>
@@ -70,6 +72,44 @@ export function OfflineModal({ resumo, onFechar }: { resumo: ResumoOffline; onFe
                   <strong>+{resumo.forjados[q]}</strong>
                 </li>
               ))}
+            </ul>
+          </div>
+        )}
+        {resumo.expedicoes.voltaram.length > 0 && (
+          <div className="modal-forjados">
+            <p className="modal-texto">
+              {resumo.expedicoes.voltaram.length === 1
+                ? '1 expedição voltou. O loot espera por você no Mapa:'
+                : `${resumo.expedicoes.voltaram.length} expedições voltaram. O loot espera por você no Mapa:`}
+            </p>
+            <ul className="modal-lista">
+              {resumo.expedicoes.voltaram.map((v, i) => (
+                <li key={i}>
+                  <span>
+                    {v.heroi} · {DEF_EXPEDICAO[v.expedicao].nome}
+                  </span>
+                  <strong className={v.sucesso ? '' : 'falhou'}>{v.sucesso ? 'sucesso' : 'falhou'}</strong>
+                </li>
+              ))}
+              <li>
+                <Sprite nome="icone_moeda" escala={2} />
+                <span>Moedas a coletar</span>
+                <strong>+{formatar(resumo.expedicoes.loot.moedas)}</strong>
+              </li>
+              {resumo.expedicoes.loot.reputacao > 0 && (
+                <li>
+                  <Sprite nome="icone_reputacao" escala={2} />
+                  <span>Reputação</span>
+                  <strong>+{formatar(resumo.expedicoes.loot.reputacao)}</strong>
+                </li>
+              )}
+              {resumo.expedicoes.loot.fragmentos > 0 && (
+                <li>
+                  <Sprite nome="icone_fragmento" escala={2} />
+                  <span>Fragmentos rúnicos</span>
+                  <strong>+{resumo.expedicoes.loot.fragmentos}</strong>
+                </li>
+              )}
             </ul>
           </div>
         )}

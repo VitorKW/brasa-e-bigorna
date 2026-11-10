@@ -19,5 +19,7 @@ pal({
   x: "#5e3a22", X: "#83552f",                             // cabelo castanho
   K: "#221a1c",                                           // cabelo preto
   T: "#9d979f", R: "#e6e1e8",                             // cabelo grisalho / branco
+  f: "#3b5236", q: "#6b8a4c",                             // verde (capuz, mato)
+  O: "#6e2626", H: "#a83c32",                             // vermelho (túnica, estandarte)
 })
-ramps("kdsSw", "kpPQ", "kbBt", "keEF", "kmM", "kcC", "roW", "hgG", "kiIj", "kzZJ", "aA", "Ll", "Uu", "Vv", "Nn", "xX", "TR")
+ramps("kdsSw", "kpPQ", "kbBt", "keEF", "kmM", "kcC", "roW", "hgG", "kiIj", "kzZJ", "aA", "Ll", "Uu", "Vv", "Nn", "xX", "TR", "kfq", "kOH")

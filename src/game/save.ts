@@ -1,8 +1,11 @@
 import { ESTACOES, ESTACOES_PRODUCAO, RECURSOS, SAVE_VERSION, type EstacaoId } from './constants.ts'
+import { CHEFES, type ChefeId } from './chefe.ts'
+import { EXPEDICOES, type Expedicao } from './expedicoes.ts'
 import { FERREIROS, podeAlocar, type Ferreiro } from './ferreiros.ts'
-import { MATERIAIS, QUALIDADES, TIPOS_ITEM, type Item, type ReceitaId } from './items.ts'
+import { CLASSES, equipamentoVazio, type Equipamento, type Heroi } from './herois.ts'
+import { MATERIAIS, QUALIDADES, SLOTS, SLOT_DO_TIPO, TIPOS_ITEM, type Item } from './items.ts'
 import { semente } from './rng.ts'
-import { LIMITE_INVENTARIO_PADRAO, ferreirosIniciais, type Forja, type GameState } from './state.ts'
+import { LIMITE_INVENTARIO_PADRAO, ferreirosIniciais, type Forja, type GameState, type PedidoForja } from './state.ts'
 
 type SaveBruto = Record<string, unknown>
 /** Cada migração leva o save da versão N para N+1. */
@@ -32,6 +35,30 @@ export const MIGRACOES: Migracoes = {
       ultimaReceita: null,
     }
   },
+  /**
+   * Fatia 2 -> fatia 3: Forno de aço no nível 0, aço zerado, fila com material (tudo ferro),
+   * sem heróis, expedições, reputação nem chefes derrotados.
+   */
+  2: (raw) => {
+    const niveis = ehObjeto(raw.niveis) ? raw.niveis : {}
+    const recursos = ehObjeto(raw.recursos) ? raw.recursos : {}
+    const fila = Array.isArray(raw.fila) ? raw.fila : []
+    return {
+      ...raw,
+      version: 3,
+      niveis: { ...niveis, forno: 0 },
+      recursos: { ...recursos, aco: 0 },
+      fila: fila.map((receita) => ({ receita, material: 'ferro' })),
+      ultimoMaterial: 'ferro',
+      herois: [],
+      proximoIdHeroi: 1,
+      expedicoes: [],
+      proximoIdExpedicao: 1,
+      reputacao: 0,
+      fragmentos: 0,
+      chefesDerrotados: [],
+    }
+  },
 }
 
 const ehNumero = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x)
@@ -54,6 +81,63 @@ function validarItem(x: unknown): Item | null {
     valor: x.valor,
     pontuacao: x.pontuacao,
   }
+}
+
+function validarEquipamento(x: unknown): Equipamento | null {
+  if (!ehObjeto(x)) return null
+  const r = equipamentoVazio()
+  for (const slot of SLOTS) {
+    const v = x[slot]
+    if (v === null || v === undefined) continue
+    const item = validarItem(v)
+    // Item no espaço errado (save adulterado) invalida o save em vez de bagunçar o herói.
+    if (!item || SLOT_DO_TIPO[item.tipo] !== slot) return null
+    r[slot] = item
+  }
+  return r
+}
+
+function validarHerois(x: unknown): Heroi[] | null {
+  if (!Array.isArray(x)) return null
+  const r: Heroi[] = []
+  for (const h of x) {
+    if (!ehObjeto(h) || !ehNumero(h.id) || typeof h.nome !== 'string') return null
+    if (!ehUm(CLASSES, h.classe) || !ehNumero(h.nivel) || h.nivel < 1 || !ehNumero(h.xp) || h.xp < 0) return null
+    const equipamento = validarEquipamento(h.equipamento)
+    if (!equipamento) return null
+    r.push({ id: Math.floor(h.id), nome: h.nome, classe: h.classe, nivel: Math.floor(h.nivel), xp: h.xp, equipamento })
+  }
+  return r
+}
+
+function validarExpedicoes(x: unknown, herois: readonly Heroi[]): Expedicao[] | null {
+  if (!Array.isArray(x)) return null
+  const r: Expedicao[] = []
+  const ocupados = new Set<number>()
+  for (const e of x) {
+    if (!ehObjeto(e) || !ehUm(EXPEDICOES, e.tipo) || typeof e.sucesso !== 'boolean') return null
+    const { id, heroi, inicio, fim, chance, moedas, xp, reputacao, fragmentos } = e
+    if (!ehNumero(id) || !ehNumero(heroi) || !ehNumero(inicio) || !ehNumero(fim) || !ehNumero(chance)) return null
+    if (!ehNumero(moedas) || !ehNumero(xp) || !ehNumero(reputacao) || !ehNumero(fragmentos)) return null
+    if (moedas < 0 || xp < 0 || reputacao < 0 || fragmentos < 0) return null
+    // Expedição de herói que não existe mais, ou herói em duas ao mesmo tempo: descarta só ela.
+    if (!herois.some((h) => h.id === heroi) || ocupados.has(heroi)) continue
+    ocupados.add(heroi)
+    r.push({
+      id: Math.floor(id),
+      heroi: Math.floor(heroi),
+      tipo: e.tipo,
+      inicio,
+      fim,
+      sucesso: e.sucesso,
+      chance,
+      moedas,
+      xp,
+      reputacao,
+      fragmentos,
+    })
+  }
+  return r
 }
 
 function validarForja(x: unknown): Forja | null | undefined {
@@ -129,15 +213,24 @@ export function validarEstado(raw: unknown): GameState | null {
     if (!item) return null
     itens.push(item)
   }
-  const fila: ReceitaId[] = []
+  const fila: PedidoForja[] = []
   for (const x of raw.fila) {
-    if (!ehUm(TIPOS_ITEM, x)) return null
-    fila.push(x)
+    if (!ehObjeto(x) || !ehUm(TIPOS_ITEM, x.receita) || !ehUm(MATERIAIS, x.material)) return null
+    fila.push({ receita: x.receita, material: x.material })
   }
   const ferreiros = validarFerreiros(raw.ferreiros)
   const forja = validarForja(raw.forja)
   if (!ferreiros || forja === undefined) return null
   if (raw.ultimaReceita !== null && !ehUm(TIPOS_ITEM, raw.ultimaReceita)) return null
+  if (!ehUm(MATERIAIS, raw.ultimoMaterial)) return null
+
+  const herois = validarHerois(raw.herois)
+  if (!herois) return null
+  const expedicoes = validarExpedicoes(raw.expedicoes, herois)
+  if (!expedicoes) return null
+  if (!ehNumero(raw.proximoIdHeroi) || !ehNumero(raw.proximoIdExpedicao)) return null
+  if (!ehNumero(raw.reputacao) || !ehNumero(raw.fragmentos) || !Array.isArray(raw.chefesDerrotados)) return null
+  const chefesDerrotados = CHEFES.filter((c) => (raw.chefesDerrotados as unknown[]).includes(c)) as ChefeId[]
 
   return {
     version: SAVE_VERSION,
@@ -155,6 +248,14 @@ export function validarEstado(raw: unknown): GameState | null {
     fila,
     automatico: raw.automatico,
     ultimaReceita: raw.ultimaReceita,
+    ultimoMaterial: raw.ultimoMaterial,
+    herois,
+    proximoIdHeroi: Math.max(1, Math.floor(raw.proximoIdHeroi), ...herois.map((h) => h.id + 1)),
+    expedicoes,
+    proximoIdExpedicao: Math.max(1, Math.floor(raw.proximoIdExpedicao), ...expedicoes.map((e) => e.id + 1)),
+    reputacao: Math.max(0, raw.reputacao),
+    fragmentos: Math.max(0, Math.floor(raw.fragmentos)),
+    chefesDerrotados,
   }
 }
 

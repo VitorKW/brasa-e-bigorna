@@ -1,6 +1,15 @@
 import { MOEDAS_INICIAIS, SAVE_VERSION, type EstacaoId, type RecursoId } from './constants.ts'
+import type { ChefeId } from './chefe.ts'
+import type { Expedicao } from './expedicoes.ts'
+import type { Heroi } from './herois.ts'
 import { FERREIROS, type Ferreiro, type FerreiroId } from './ferreiros.ts'
 import type { Item, MaterialId, ReceitaId, ResultadoBatida } from './items.ts'
+
+/** Pedido de forja (fila): a receita e o material escolhidos na hora de enfileirar. */
+export interface PedidoForja {
+  receita: ReceitaId
+  material: MaterialId
+}
 
 /** Tarefa em andamento na bigorna. Tudo que é sorteado nasce aqui, ANTES do minigame. */
 export interface Forja {
@@ -38,10 +47,23 @@ export interface GameState {
   ferreiros: Record<FerreiroId, Ferreiro>
   forja: Forja | null
   /** Receitas esperando a vez (a bigorna toca uma de cada vez). */
-  fila: ReceitaId[]
+  fila: PedidoForja[]
   /** Modo automático: repete a última receita enquanto houver lingotes e espaço. */
   automatico: boolean
   ultimaReceita: ReceitaId | null
+  /** Material da última receita (o modo automático repete os dois). */
+  ultimoMaterial: MaterialId
+
+  // Fatia 3
+  herois: Heroi[]
+  proximoIdHeroi: number
+  /** Expedições em andamento ou que já voltaram e esperam a coleta. */
+  expedicoes: Expedicao[]
+  proximoIdExpedicao: number
+  /** Não se gasta: é um limiar (GDD §4.1). */
+  reputacao: number
+  fragmentos: number
+  chefesDerrotados: ChefeId[]
 }
 
 export const LIMITE_INVENTARIO_PADRAO = 30 // [suposição]
@@ -56,8 +78,8 @@ export function estadoInicial(now: number, rng = 20261109): GameState {
   return {
     version: SAVE_VERSION,
     lastTick: now,
-    niveis: { mina: 1, carvoaria: 1, fornalha: 1, bigorna: 0 },
-    recursos: { minerio: 0, carvao: 0, lingote: 0 },
+    niveis: { mina: 1, carvoaria: 1, fornalha: 1, bigorna: 0, forno: 0 },
+    recursos: { minerio: 0, carvao: 0, lingote: 0, aco: 0 },
     moedas: MOEDAS_INICIAIS,
     moedasGanhas: 0,
     rng,
@@ -69,5 +91,13 @@ export function estadoInicial(now: number, rng = 20261109): GameState {
     fila: [],
     automatico: false,
     ultimaReceita: null,
+    ultimoMaterial: 'ferro',
+    herois: [],
+    proximoIdHeroi: 1,
+    expedicoes: [],
+    proximoIdExpedicao: 1,
+    reputacao: 0,
+    fragmentos: 0,
+    chefesDerrotados: [],
   }
 }

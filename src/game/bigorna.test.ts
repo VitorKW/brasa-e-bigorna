@@ -19,14 +19,14 @@ import { estadoInicial, type GameState } from './state.ts'
 const oficina = (mut: Partial<GameState> = {}): GameState => ({
   ...estadoInicial(0, 1234),
   moedas: 1e6,
-  niveis: { mina: 1, carvoaria: 1, fornalha: 1, bigorna: 1 },
-  recursos: { minerio: 0, carvao: 0, lingote: 100 },
+  niveis: { mina: 1, carvoaria: 1, fornalha: 1, bigorna: 1, forno: 0 },
+  recursos: { minerio: 0, carvao: 0, lingote: 100, aco: 0 },
   ...mut,
 })
 
 describe('iniciar a forja', () => {
   it('bloqueada (nível 0) não inicia', () => {
-    const s = oficina({ niveis: { mina: 1, carvoaria: 1, fornalha: 1, bigorna: 0 } })
+    const s = oficina({ niveis: { mina: 1, carvoaria: 1, fornalha: 1, bigorna: 0, forno: 0 } })
     expect(forjar(s, 'espada')).toBe(s)
   })
 
@@ -60,7 +60,7 @@ describe('iniciar a forja', () => {
   })
 
   it('sem lingotes suficientes não inicia', () => {
-    const s = oficina({ recursos: { minerio: 0, carvao: 0, lingote: 2 } })
+    const s = oficina({ recursos: { minerio: 0, carvao: 0, lingote: 2, aco: 0 } })
     expect(forjar(s, 'espada')).toBe(s)
   })
 })
@@ -86,7 +86,7 @@ describe('fila e modo automático', () => {
   })
 
   it('automático repete a última receita enquanto houver lingotes', () => {
-    let s = forjar(oficina({ recursos: { minerio: 0, carvao: 0, lingote: 9 } }), 'espada')
+    let s = forjar(oficina({ recursos: { minerio: 0, carvao: 0, lingote: 9, aco: 0 } }), 'espada')
     s = alternarAutomatico(s)
     const r = avancarBigorna(s, 1000)
     expect(r.forjados).toHaveLength(3) // 9 lingotes / 3
@@ -109,7 +109,7 @@ describe('fila e modo automático', () => {
   })
 
   it('o tempo respeita 0,92^(n−1): nível 3 forja espada em ~8,46 s', () => {
-    const s = oficina({ niveis: { mina: 1, carvoaria: 1, fornalha: 1, bigorna: 3 } })
+    const s = oficina({ niveis: { mina: 1, carvoaria: 1, fornalha: 1, bigorna: 3, forno: 0 } })
     expect(tempoForjaAtual(s, 'espada')).toBeCloseTo(10 * 0.92 ** 2, 9)
   })
 })
@@ -204,7 +204,7 @@ describe('item forjado', () => {
   })
 
   it('Iara dá ~10 % de itens extras no longo prazo', () => {
-    let s = alocar(contratar(oficina({ recursos: { minerio: 0, carvao: 0, lingote: 1e6 }, limiteInventario: 1e6 }), 'iara'), 'iara', 'bigorna')
+    let s = alocar(contratar(oficina({ recursos: { minerio: 0, carvao: 0, lingote: 1e6, aco: 0 }, limiteInventario: 1e6 }), 'iara'), 'iara', 'bigorna')
     s = alternarAutomatico(forjar(s, 'espada'))
     const r = avancarBigorna(s, 10 * 2000)
     const tarefas = 2000
@@ -214,7 +214,7 @@ describe('item forjado', () => {
 
   it('valor esperado cresce com a bigorna', () => {
     const baixo = oficina()
-    const alto = oficina({ niveis: { mina: 1, carvoaria: 1, fornalha: 1, bigorna: 40 } })
+    const alto = oficina({ niveis: { mina: 1, carvoaria: 1, fornalha: 1, bigorna: 40, forno: 0 } })
     expect(valorEsperadoItem(alto, 'espada')).toBeGreaterThan(valorEsperadoItem(baixo, 'espada'))
   })
 })

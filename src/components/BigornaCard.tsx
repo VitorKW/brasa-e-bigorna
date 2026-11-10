@@ -3,6 +3,7 @@ import { useReducedMotion } from 'motion/react'
 import {
   FILA_MAX,
   faixaQ,
+  estoqueDe,
   inventarioCheio,
   motivoParaNaoIniciar,
   tempoForjaAtual,
@@ -11,12 +12,16 @@ import {
 import { custoProximoNivel, podeComprar } from '../game/economy.ts'
 import { formatar, formatarCusto } from '../game/format.ts'
 import {
+  MATERIAIS,
+  MULT_MATERIAL,
+  NOME_MATERIAL,
   NOME_TIPO,
   RECEITAS,
   TIPOS_ITEM,
   nomeQualidade,
   qualidadeDe,
   rotuloQualidade,
+  type MaterialId,
   type ReceitaId,
 } from '../game/items.ts'
 import { useGame } from '../store.ts'
@@ -27,6 +32,7 @@ const TEXTO_BLOQUEIO: Record<MotivoBloqueio, string> = {
   bloqueada: '',
   ocupada: '',
   'sem-lingote': 'Faltam lingotes para esta receita.',
+  'sem-forno': 'O aço precisa do Forno de aço.',
   'inventario-cheio': 'Inventário cheio. Venda itens para forjar.',
 }
 
@@ -55,6 +61,9 @@ export function BigornaCard() {
   const reduzir = useReducedMotion()
 
   const [escolhida, setEscolhida] = useState<ReceitaId>(jogo.ultimaReceita ?? 'espada')
+  const [materialEscolhido, setMaterial] = useState<MaterialId>(jogo.ultimoMaterial)
+  // Sem forno não há aço, mesmo que o save tenha 'aço' como último material.
+  const material: MaterialId = jogo.niveis.forno >= 1 ? materialEscolhido : 'ferro'
   const { itens, adicionar, remover } = useFlutuantes(2)
   const [faiscas, setFaiscas] = useState<number | null>(null)
   const visto = useRef<number | null>(ultimoForjado?.id ?? null)
@@ -109,10 +118,10 @@ export function BigornaCard() {
   const forja = jogo.forja
   const trabalhando = forja !== null && (forja.progresso < 1 || forja.minigame === 'pendente')
   const parada = forja === null
-  const faixa = faixaQ(jogo)
+  const faixa = faixaQ(jogo, material)
   const qMin = qualidadeDe(faixa.min)
   const qMax = qualidadeDe(faixa.max)
-  const motivo = motivoParaNaoIniciar(jogo, escolhida)
+  const motivo = motivoParaNaoIniciar(jogo, escolhida, material)
   const ocupada = motivo === 'ocupada'
   const filaCheia = jogo.fila.length >= FILA_MAX
   // "Forjar" vale também com a bigorna ocupada (entra na fila); "com batida" só com ela livre.
@@ -166,11 +175,30 @@ export function BigornaCard() {
         </div>
       )}
 
+      {jogo.niveis.forno >= 1 && (
+        <div className="materiais" role="radiogroup" aria-label="Material">
+          {MATERIAIS.map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="radio"
+              aria-checked={material === m}
+              className={`material ${material === m ? 'marcado' : ''}`}
+              onClick={() => setMaterial(m)}
+            >
+              <Sprite nome={m === 'aco' ? 'icone_lingote_aco' : 'icone_lingote'} escala={1} />
+              <span>{m === 'aco' ? 'Aço' : 'Ferro'}</span>
+              <small>{formatar(estoqueDe(jogo, m))} lingotes</small>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="receitas" role="radiogroup" aria-label="Receita">
         {TIPOS_ITEM.map((tipo) => {
           const r = RECEITAS[tipo]
           const marcada = escolhida === tipo
-          const faltaLingote = jogo.recursos.lingote < r.lingotes
+          const faltaLingote = estoqueDe(jogo, material) < r.lingotes
           return (
             <button
               key={tipo}
@@ -180,13 +208,13 @@ export function BigornaCard() {
               className={`receita ${marcada ? 'marcada' : ''}`}
               onClick={() => setEscolhida(tipo)}
             >
-              <Sprite nome={`item_${tipo}_ferro`} escala={2} />
+              <Sprite nome={`item_${tipo}_${material}`} escala={2} />
               <span className="receita-nome">{NOME_TIPO[tipo]}</span>
               <span className={`receita-info ${faltaLingote ? 'falta' : ''}`}>
-                <Sprite nome="icone_lingote" escala={1} /> {r.lingotes} · {segundos(tempoForjaAtual(jogo, tipo))}
+                <Sprite nome={material === 'aco' ? 'icone_lingote_aco' : 'icone_lingote'} escala={1} /> {r.lingotes} · {segundos(tempoForjaAtual(jogo, tipo))}
               </span>
               <span className="receita-valor">
-                <Sprite nome="icone_moeda" escala={1} /> {formatar(r.valorBase)}
+                <Sprite nome="icone_moeda" escala={1} /> {formatar(r.valorBase * MULT_MATERIAL[material])}
               </span>
             </button>
           )
@@ -198,7 +226,7 @@ export function BigornaCard() {
           type="button"
           className="botao botao-primario"
           disabled={!podeForjar}
-          onClick={() => forjar(escolhida, false)}
+          onClick={() => forjar(escolhida, false, material)}
         >
           {ocupada ? 'Enfileirar' : 'Forjar'}
         </button>
@@ -206,7 +234,7 @@ export function BigornaCard() {
           type="button"
           className="botao botao-secundario"
           disabled={!podeBatida}
-          onClick={() => forjar(escolhida, true)}
+          onClick={() => forjar(escolhida, true, material)}
           aria-describedby="dica-batida"
         >
           Forjar com batida
@@ -230,7 +258,7 @@ export function BigornaCard() {
           Modo automático
           <small>
             {jogo.automatico
-              ? ` · repete ${jogo.ultimaReceita ? NOME_TIPO[jogo.ultimaReceita].toLowerCase() : 'a última receita'}`
+              ? ` · repete ${jogo.ultimaReceita ? `${NOME_TIPO[jogo.ultimaReceita].toLowerCase()} de ${NOME_MATERIAL[jogo.ultimoMaterial]}` : 'a última receita'}`
               : ' · desligado'}
           </small>
         </span>
@@ -239,13 +267,13 @@ export function BigornaCard() {
       {jogo.fila.length > 0 && (
         <ol className="fila" aria-label="Fila de forja">
           {jogo.fila.map((r, i) => (
-            <li key={`${i}-${r}`}>
-              <span>{i + 1}. {NOME_TIPO[r]}</span>
+            <li key={`${i}-${r.receita}-${r.material}`}>
+              <span>{i + 1}. {NOME_TIPO[r.receita]} de {NOME_MATERIAL[r.material]}</span>
               <button
                 type="button"
                 className="botao-icone"
                 onClick={() => removerDaFila(i)}
-                aria-label={`Tirar ${NOME_TIPO[r].toLowerCase()} da fila`}
+                aria-label={`Tirar ${NOME_TIPO[r.receita].toLowerCase()} de ${NOME_MATERIAL[r.material]} da fila`}
               >
                 Tirar
               </button>
