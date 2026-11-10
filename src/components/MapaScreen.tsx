@@ -198,6 +198,39 @@ function CartaoChefe({ chefe }: { chefe: ChefeId }) {
 
 const CHEFE_DA_REGIAO: Record<RegiaoId, ChefeId> = { vale: 'golem', serra: 'serpe' }
 
+/**
+ * Heróis fora, andando por cima do banner da região: a posição é o progresso da viagem (ida e volta,
+ * então metade do caminho é o ponto mais longe). Quem já voltou espera parado na borda, acenando.
+ */
+function Viajantes({ regiao }: { regiao: RegiaoId }) {
+  const jogo = useGame((s) => s.jogo)
+  const agora = jogo.lastTick
+  const aqui = jogo.expedicoes.filter((e) => DEF_EXPEDICAO[e.tipo].regiao === regiao)
+  if (aqui.length === 0) return null
+  return (
+    <div className="viajantes" aria-hidden="true">
+      {aqui.map((e, i) => {
+        const h = acharHeroi(jogo, e.heroi)
+        if (!h) return null
+        const t = Math.min(1, Math.max(0, (agora - e.inicio) / (e.fim - e.inicio)))
+        const chegou = voltou(e, agora)
+        // Ida até 50 %, volta depois: o herói vai à direita e retorna virado para a esquerda.
+        const ida = t < 0.5
+        const pos = chegou ? 0.04 : ida ? 0.06 + (t / 0.5) * 0.82 : 0.88 - ((t - 0.5) / 0.5) * 0.82
+        return (
+          <div
+            key={e.id}
+            className={`viajante ${ida || chegou ? '' : 'voltando'}`}
+            style={{ left: `${pos * 100}%`, bottom: `${4 + (i % 2) * 8}px` }}
+          >
+            <Sprite nome={chegou ? `heroi_${h.classe}` : `heroi_${h.classe}_andando`} escala={2} fps={6} />
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 /** Aba Mapa: quem está fora, uma região por vez (Vale / Serra) e o chefe dela. */
 export function MapaScreen() {
   const jogo = useGame((s) => s.jogo)
@@ -284,6 +317,7 @@ export function MapaScreen() {
       <section className={`secao painel regiao ${regiaoAberta ? '' : 'fechada'}`} aria-label={DEF_REGIAO[regiao].nome}>
         <div className="regiao-banner">
           <Sprite nome={regiao === 'vale' ? 'regiao_vale' : 'regiao_serra'} escala={3} rotulo={DEF_REGIAO[regiao].nome} />
+          <Viajantes regiao={regiao} />
         </div>
         {regiaoAberta ? (
           <>

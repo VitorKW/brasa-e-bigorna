@@ -6,6 +6,7 @@ import { CombateReplay } from './components/CombateReplay.tsx'
 import { ForgeScreen } from './components/ForgeScreen.tsx'
 import { GuildaScreen } from './components/GuildaScreen.tsx'
 import { MapaScreen } from './components/MapaScreen.tsx'
+import { MoedasVoando, RevelacaoItem } from './components/Efeitos.tsx'
 import { ObjetivoBanner } from './components/ObjetivoBanner.tsx'
 import { ReforjarScreen } from './components/ReforjarScreen.tsx'
 import { OfflineModal } from './components/OfflineModal.tsx'
@@ -49,6 +50,8 @@ export default function App() {
       {aba === 'forja' && subForja === 'producao' && <SellPanel />}
       <TabBar />
       <ToastConquista />
+      <MoedasVoando />
+      <RevelacaoItem />
       <BatidaModal />
       {combate && <CombateReplay key={combate.id} combate={combate} />}
       <AnimatePresence>

@@ -35,6 +35,8 @@ export type SpriteNome =
   | `npc_${NpcId}`
   | 'regiao_vale'
   | 'regiao_serra'
+  | 'cena_forja'
+  | 'carrinho'
 
 interface Def {
   /** Largura e altura de UM quadro, em pixels nativos. */
@@ -140,6 +142,8 @@ const SPRITES: Record<SpriteNome, Def> = {
   icone_conquista: { w: 16, h: 16, cor: '#ffd47a', texto: '#1b1618', inicial: 'C' },
   regiao_vale: { w: 96, h: 32, cor: '#3f5a3a', texto: '#f3e9dc', inicial: 'Vale' },
   regiao_serra: { w: 96, h: 32, cor: '#4a4f5c', texto: '#f3e9dc', inicial: 'Serra' },
+  cena_forja: { w: 176, h: 88, cor: '#2e2a30', texto: '#f3e9dc', inicial: '' },
+  carrinho: { w: 16, h: 12, cor: '#5b5662', texto: '#f3e9dc', inicial: '' },
 }
 
 const urlDe = (nome: SpriteNome) => `${import.meta.env.BASE_URL}sprites/${nome}.png`

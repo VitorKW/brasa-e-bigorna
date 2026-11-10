@@ -477,3 +477,23 @@ describe('aviso de nova versão', () => {
     expect(saida).toContain('Depois</button>')
   })
 })
+
+describe('cena viva da forja', () => {
+  it('mostra as 4 estações tocáveis; sem bigorna ela aparece trancada', () => {
+    comEstado({ ...estadoInicial(0) }, { subForja: 'producao' })
+    const saida = renderToString(<ForgeScreen />)
+    for (const t of ['Tocar na mina', 'Tocar na carvoaria', 'Tocar na fornalha', 'Bigorna: ainda não construída']) {
+      expect(saida, t).toContain(t)
+    }
+    expect(saida).toContain('class="cena"')
+  })
+
+  it('com a bigorna de pé e o ferreiro no posto, ele aparece ao lado dela', () => {
+    let s: GameState = { ...estadoInicial(0, 3), niveis: { mina: 1, carvoaria: 1, fornalha: 1, bigorna: 1, forno: 0 } }
+    s = alocar(contratar({ ...s, moedas: 1e6 }, 'cida'), 'cida', 'bigorna')
+    comEstado(s, { subForja: 'producao' })
+    const saida = renderToString(<ForgeScreen />)
+    expect(saida).toContain('Tocar na bigorna')
+    expect(saida).toContain('cena-ferreiro')
+  })
+})

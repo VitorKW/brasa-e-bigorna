@@ -112,6 +112,18 @@ em vez de teto diário, porque um teto diário exigiria um relógio de dia, que 
 - *Recalibração.* A venda automática multiplicou por 2,8 a renda do 1º dia (14,8 M para 41,8 M); o simulador mostrou, e Taverna, Mercado, Muralha e
   Serpe foram reajustados (GDD §4.2, "Notas da fatia 5").
 
+**Fatia 6: tela mais limpa e mais viva** (feita depois do primeiro teste com jogador, que achou o jogo poluído e pouco visual).
+- *Próximo objetivo.* `objetivo.ts` lê o estado e devolve uma frase ("Construa a bigorna", "Derrote o Golem no Mapa") com destino e progresso;
+  a faixa no topo leva até lá. Substitui o tutorial que o jogo nunca teve.
+- *Uma coisa por vez.* Forja em Produção / Bigorna / Ferreiros, Mapa com uma região por vez, barra de recursos que mostra só o que importa
+  na aba aberta, e números técnicos ("próximo: 520/s", PV/ATQ dos chefes) fora da tela principal.
+- *Cena viva.* Um fundo em pixel art (`art/fatia6.px.js`) com as estações por cima, no DOM, para reagirem ao estado (fogo, fumaça, carrinho,
+  ferreiro martelando) e ao dedo. `toque.ts`: cada toque vale 1/4 s de produção com piso no começo, e na bigorna adianta 8 % da peça sem
+  nunca terminá-la (o tick continua dono do fim da forja, da batida e do inventário). O sim não toca, então o balanceamento idle não muda.
+- *Efeitos.* Moedas voando até o contador, selo "Nível N" ou "Produção x2!" ao melhorar, revelação para peça épica ou lendária (sempre na
+  batida; na forja automática, só lendária e no máximo uma a cada 30 s) e heróis andando sobre o banner da região. Tudo some com
+  `prefers-reduced-motion`.
+
 **Sim guloso de balanceamento.** `simular(horas, passo, opções)` joga o jogo com uma estratégia simples (compra a opção de melhor retorno por
 moeda, aloca ferreiros por força bruta, entrega encomendas, equipa o melhor kit, luta quando a previsão dá vitória) e mede os marcos. Com
 um padrão de jogador por dias (2 h sem parar no começo de cada ciclo, depois 5 min de sessão a cada 90 min, 8 h de sono, o resto offline

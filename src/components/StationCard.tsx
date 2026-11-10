@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { NIVEIS_MARCO } from '../game/constants.ts'
 import { formatar, formatarCusto, formatarTaxa } from '../game/format.ts'
 import { Flutuantes, useFlutuantes } from './Flutuantes.tsx'
 import { Sprite, type SpriteNome } from './Sprite.tsx'
@@ -26,6 +27,17 @@ interface Props {
 export function StationCard(p: Props) {
   const { itens, adicionar, remover } = useFlutuantes(2)
 
+  // Subiu de nível: o cartão pisca e um selo "Nível N" (ou "Produção x2!" no marco) salta do botão.
+  const nivelAntes = useRef(p.nivel)
+  const [subiu, setSubiu] = useState<{ id: number; texto: string; marco: boolean } | null>(null)
+  useEffect(() => {
+    if (p.nivel > nivelAntes.current) {
+      const marco = (NIVEIS_MARCO as readonly number[]).includes(p.nivel)
+      setSubiu({ id: p.nivel, texto: marco ? 'Produção x2!' : `Nível ${p.nivel}`, marco })
+    }
+    nivelAntes.current = p.nivel
+  }, [p.nivel])
+
   // Um "+N" suave a cada 3 s enquanto trabalha (nunca com a aba escondida).
   useEffect(() => {
     if (p.parada || p.saida.porSegundo <= 0) return
@@ -43,7 +55,17 @@ export function StationCard(p: Props) {
     .join(' ')
 
   return (
-    <article className={classe} aria-label={p.nome}>
+    <article className={`${classe}${subiu ? ' subiu' : ''}`} aria-label={p.nome} key={subiu ? `s${subiu.id}` : undefined}>
+      {subiu && (
+        <span
+          key={subiu.id}
+          className={`estacao-pop ${subiu.marco ? 'marco' : ''}`}
+          aria-hidden="true"
+          onAnimationEnd={() => setSubiu(null)}
+        >
+          {subiu.texto}
+        </span>
+      )}
       <div className="estacao-arte">
         <Sprite nome={spriteAtual} escala={2} rotulo={p.nome} />
       </div>

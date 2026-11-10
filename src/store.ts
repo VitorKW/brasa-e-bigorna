@@ -32,6 +32,7 @@ import { desserializar, serializar } from './game/save.ts'
 import { estadoInicial, type GameState } from './game/state.ts'
 import { comprarTalento as comprarTalentoRegra, type TalentoId } from './game/talentos.ts'
 import { tickDetalhado } from './game/tick.ts'
+import { tocar as tocarRegra, type AlvoToque } from './game/toque.ts'
 
 const CHAVE_SAVE = 'brasa-e-bigorna:save'
 const CHAVE_BACKUP = 'brasa-e-bigorna:save-backup'
@@ -100,6 +101,8 @@ interface Store {
   ultimaEntrega: { id: number; entrega: Entrega } | null
   irPara: (aba: AbaId) => void
   irParaForja: (sub: SubForja) => void
+  /** Toque na cena da forja. Devolve quanto rendeu (0 = nada aconteceu). */
+  tocarCena: (alvo: AlvoToque) => number
   avancar: (now: number) => void
   melhorar: (estacao: EstacaoId) => void
   vender: (recurso: RecursoId | 'tudo') => void
@@ -181,6 +184,12 @@ export const useGame = create<Store>((set, get) => ({
 
   irPara: (aba) => set({ aba, ultimoReforjar: null }),
   irParaForja: (sub) => set({ aba: 'forja', subForja: sub, ultimoReforjar: null }),
+
+  tocarCena: (alvo) => {
+    const r = tocarRegra(get().jogo, alvo)
+    if (r.ganho > 0) set({ jogo: r.estado })
+    return r.ganho
+  },
 
   avancar: (now) => {
     const { jogo } = get()

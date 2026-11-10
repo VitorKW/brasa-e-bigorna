@@ -14,6 +14,7 @@ import { formatarCusto } from '../game/format.ts'
 import { multiplicadorEstacao } from '../game/ferreiros.ts'
 import { useGame, type SubForja } from '../store.ts'
 import { BigornaCard } from './BigornaCard.tsx'
+import { CenaForja } from './CenaForja.tsx'
 import { FerreirosPanel } from './FerreirosPanel.tsx'
 import { Dica } from './Dica.tsx'
 import { ItensPanel } from './ItensPanel.tsx'
@@ -101,6 +102,7 @@ function Producao() {
 
   return (
     <>
+      <CenaForja />
       <Dica id="melhorar" visivel={n.mina <= 3}>
         Venda o minério (botão embaixo) e toque em Melhorar para cavar mais rápido. Mina e carvoaria alimentam a fornalha, e a fornalha, a bigorna.
       </Dica>

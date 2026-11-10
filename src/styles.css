@@ -2568,3 +2568,380 @@ p {
 .encomenda .encomenda-texto {
   gap: 2px;
 }
+
+/* ---------- Fatia 6: cena viva da forja ---------- */
+.cena {
+  position: relative;
+  width: 100%;
+  margin-bottom: 10px;
+  overflow: hidden;
+  border: 1px solid var(--aco);
+  border-radius: var(--raio);
+  background: var(--carvao);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cena-palco {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  image-rendering: pixelated;
+}
+
+.cena-palco .sprite {
+  image-rendering: pixelated;
+}
+
+.cena-ponto {
+  position: absolute;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+  transform-origin: 50% 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cena-ponto:focus-visible {
+  outline: 1px solid var(--amarelo);
+  outline-offset: 1px;
+}
+
+.cena-ponto.tocado {
+  animation: cena-amassa 0.16s ease-out;
+}
+
+.cena-ponto.negado {
+  animation: cena-nega 0.16s linear;
+}
+
+.cena-ponto.trancada {
+  filter: grayscale(1) brightness(0.55);
+  cursor: default;
+}
+
+@keyframes cena-amassa {
+  0% { transform: scale(1, 1); }
+  40% { transform: scale(1.08, 0.9); }
+  100% { transform: scale(1, 1); }
+}
+
+@keyframes cena-nega {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-1px); }
+  75% { transform: translateX(1px); }
+}
+
+.cena-ferreiro {
+  position: absolute;
+  left: 150px;
+  top: 39px;
+  line-height: 0;
+}
+
+.cena-carrinho {
+  position: absolute;
+  left: 16px;
+  top: 58px;
+  line-height: 0;
+}
+
+.cena-carrinho.andando {
+  animation: cena-trilho 7s ease-in-out infinite alternate;
+}
+
+@keyframes cena-trilho {
+  0%, 8% { transform: translateX(0); }
+  92%, 100% { transform: translateX(80px); }
+}
+
+.cena-brilho {
+  position: absolute;
+  width: 40px;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(242, 154, 58, 0.45), rgba(242, 154, 58, 0));
+  pointer-events: none;
+  animation: cena-pulsa 1.6s ease-in-out infinite;
+}
+
+@keyframes cena-pulsa {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* Fumaça: três baforadas quadradas (pixel) subindo e sumindo, defasadas. */
+.cena-fumaca {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  pointer-events: none;
+}
+
+.cena-fumaca::before,
+.cena-fumaca::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2px;
+  height: 2px;
+  border-radius: 1px;
+  background: #8d8996;
+  opacity: 0;
+  animation: cena-fumaca 3s linear infinite;
+}
+
+.cena-fumaca::after {
+  animation-delay: 1.5s;
+}
+
+.cena-fumaca.forte::before,
+.cena-fumaca.forte::after {
+  background: #5b5662;
+  animation-duration: 2.2s;
+}
+
+@keyframes cena-fumaca {
+  0% { opacity: 0; transform: translate(0, 0) scale(1); }
+  15% { opacity: 0.55; }
+  100% { opacity: 0; transform: translate(4px, -14px) scale(1.5); }
+}
+
+.cena-efeito {
+  position: absolute;
+  pointer-events: none;
+  animation: cena-sobe 0.8s ease-out forwards;
+}
+
+.cena-efeito-texto {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  white-space: nowrap;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 8px;
+  line-height: 1;
+  color: var(--amarelo);
+  text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000;
+}
+
+.cena-efeito-texto .sprite {
+  width: 8px;
+  height: 8px;
+}
+
+.cena-efeito.falhou .cena-efeito-texto {
+  color: var(--texto);
+  font-size: 6px;
+}
+
+@keyframes cena-sobe {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-14px); }
+}
+
+.cena-lasca {
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 2px;
+  height: 2px;
+  animation: cena-lasca 0.6s ease-out forwards;
+}
+
+@keyframes cena-lasca {
+  0% { transform: translate(0, 0); opacity: 1; }
+  60% { opacity: 1; }
+  100% { transform: translate(var(--dx), calc(var(--dy) + 14px)); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cena-carrinho.andando,
+  .cena-brilho,
+  .cena-fumaca::before,
+  .cena-fumaca::after,
+  .cena-ponto.tocado,
+  .cena-ponto.negado,
+  .cena-lasca {
+    animation: none;
+  }
+  .cena-efeito {
+    animation-duration: 1.2s;
+  }
+}
+
+/* Efeitos: subir de nível, moedas voando, revelação de peça rara. */
+.estacao.subiu {
+  animation: estacao-brilha 0.5s ease-out;
+}
+
+@keyframes estacao-brilha {
+  0% { box-shadow: 0 0 0 0 rgba(255, 212, 122, 0.8), inset 0 1px 0 rgba(243, 233, 220, 0.12); }
+  100% { box-shadow: 0 0 0 10px rgba(255, 212, 122, 0), inset 0 1px 0 rgba(243, 233, 220, 0.12); }
+}
+
+.estacao-pop {
+  position: absolute;
+  right: 16px;
+  bottom: 56px;
+  z-index: 3;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--amarelo);
+  color: var(--carvao);
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 17px;
+  pointer-events: none;
+  animation: estacao-pop 0.9s ease-out forwards;
+}
+
+.estacao-pop.marco {
+  background: var(--brasa);
+  color: var(--texto);
+  font-size: 20px;
+  animation-duration: 1.4s;
+}
+
+@keyframes estacao-pop {
+  0% { opacity: 0; transform: translateY(8px) scale(0.7); }
+  20% { opacity: 1; transform: translateY(0) scale(1.1); }
+  35% { transform: scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-22px); }
+}
+
+.efeitos-camada {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.moeda-voando {
+  position: absolute;
+  left: 0;
+  top: 0;
+  line-height: 0;
+}
+
+.chip-moedas.pulo .sprite {
+  animation: chip-pulo 0.35s ease-out;
+}
+
+@keyframes chip-pulo {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.35); }
+}
+
+.revelacao-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.revelacao {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 32%;
+  width: fit-content;
+  margin: 0 auto;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 28px 16px;
+  background: rgba(27, 22, 24, 0.92);
+  border: 2px solid var(--cor);
+  border-radius: 12px;
+  box-shadow: 0 0 32px var(--cor);
+}
+
+.revelacao .sprite {
+  position: relative;
+  filter: drop-shadow(0 0 8px var(--cor));
+}
+
+.revelacao-raios {
+  position: absolute;
+  left: 50%;
+  top: 58px;
+  width: 180px;
+  height: 180px;
+  margin: -90px 0 0 -90px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(var(--cor) 0deg 10deg, transparent 10deg 30deg);
+  opacity: 0.25;
+  mask: radial-gradient(closest-side, #000 30%, transparent 100%);
+  animation: raios-gira 6s linear infinite;
+}
+
+@keyframes raios-gira {
+  to { transform: rotate(360deg); }
+}
+
+.revelacao-nome {
+  position: relative;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 26px;
+  text-shadow: 0 2px 0 #000;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .estacao.subiu,
+  .estacao-pop,
+  .chip-moedas.pulo .sprite,
+  .revelacao-raios {
+    animation: none;
+  }
+  .estacao-pop {
+    display: none;
+  }
+}
+
+/* Heróis andando sobre o banner da região. */
+.regiao-banner {
+  position: relative;
+}
+
+.viajantes {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: min(288px, 100%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.viajante {
+  position: absolute;
+  transform: translateX(-50%);
+  transition: left 1s linear;
+  line-height: 0;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6));
+}
+
+.viajante.voltando .sprite {
+  transform: scaleX(-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viajante {
+    transition: none;
+  }
+}
