@@ -1,7 +1,6 @@
 import {
   DEF_NPC,
   ENCOMENDA,
-  falaDe,
   itensDaEntrega,
   quantosServem,
   textoPedido,
@@ -25,15 +24,12 @@ function Cartao({ e }: { e: Encomenda }) {
   return (
     <li className={`encomenda painel ${pode ? 'pronta' : ''}`} aria-label={`${npc.nome}, ${npc.papel}: ${pedido}`}>
       <div className="encomenda-topo">
-        <Sprite nome={`npc_${e.npc}`} escala={3} rotulo={`${npc.nome}, ${npc.papel}`} />
+        <Sprite nome={`npc_${e.npc}`} escala={2} rotulo={`${npc.nome}, ${npc.papel}`} />
         <div className="encomenda-texto">
           <h3>{npc.nome}</h3>
-          <span className="encomenda-papel">{npc.papel}</span>
+          <p className="encomenda-pedido">{pedido}</p>
         </div>
       </div>
-
-      <p className="encomenda-fala">“{falaDe(e)}”</p>
-      <p className="encomenda-pedido">{pedido}</p>
 
       <div className="encomenda-linhas">
         <span className={`encomenda-prazo ${urgente ? 'urgente' : ''}`}>

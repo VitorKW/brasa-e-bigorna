@@ -2409,3 +2409,162 @@ p {
   font-size: 22px;
   color: var(--amarelo);
 }
+
+/* Mapa enxuto: linhas de andamento sem painel próprio, expedição em uma faixa. */
+.andamentos .andamento {
+  background: var(--carvao);
+  border: 1px solid var(--aco-desligado);
+  border-left: 4px solid var(--aco);
+  border-radius: var(--raio);
+  padding: 6px 10px;
+}
+
+.andamentos .andamento.quente {
+  border-left-color: var(--laranja);
+}
+
+.andamentos .andamento.pronto {
+  border-left-color: var(--amarelo);
+}
+
+.andamentos .loot {
+  font-size: 16px;
+}
+
+.expedicao.compacta {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 12px;
+  border: 1px solid var(--aco-desligado);
+  border-radius: var(--raio);
+}
+
+.expedicao-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.expedicao-nome {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.expedicao-nome small {
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--texto-suave);
+}
+
+.expedicao-resumo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 12px;
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.expedicao-resumo > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chance-texto {
+  padding: 0 6px;
+  border-radius: 4px;
+  color: var(--carvao);
+}
+
+.chance-texto.boa {
+  background: #8fd18a;
+}
+
+.chance-texto.media {
+  background: var(--amarelo);
+}
+
+.chance-texto.ruim {
+  background: #e98a7a;
+}
+
+.expedicao-ir {
+  flex: none;
+  min-width: 88px;
+}
+
+.expedicao-legenda {
+  margin: 0;
+  font-size: 14px;
+}
+
+.sub-aba-trava {
+  font-family: var(--fonte-corpo);
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.sub-abas .sub-aba {
+  line-height: 1.1;
+  padding: 4px 6px;
+}
+
+.chefe-derrotado {
+  margin: 0;
+}
+
+/* Vilarejo enxuto: pedido no cabeçalho do morador; obras prontas como selos. */
+.encomenda .encomenda-pedido {
+  margin: 2px 0 0;
+  font-size: 18px;
+}
+
+.obras-feitas {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.obras-feitas li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  background: var(--carvao);
+  border: 1px solid var(--amarelo);
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+/* Sub-abas dividem a largura igualmente, sejam 2 ou 3. */
+.sub-abas {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+
+.dica-icone {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.encomenda .encomenda-texto h3,
+.encomenda .encomenda-pedido {
+  margin: 0;
+}
+
+.encomenda .encomenda-texto {
+  gap: 2px;
+}

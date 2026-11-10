@@ -15,187 +15,110 @@ import {
   type ExpedicaoId,
   type RegiaoId,
 } from '../game/expedicoes.ts'
-import { formatar, formatarDuracao, formatarTaxa } from '../game/format.ts'
+import { formatar, formatarDuracao } from '../game/format.ts'
 import { DEF_CLASSE, acharHeroi, emExpedicao, poderHeroi, type Heroi } from '../game/herois.ts'
 import { useGame } from '../store.ts'
 import { Sprite } from './Sprite.tsx'
 
-
 const pct = (p: number) => `${Math.round(p * 100)} %`
 
-/** Texto curto de uma duração em segundos: "2 min", "1 h", "8 h". */
-const duracao = (s: number) => formatarDuracao(s)
+/** Reputação inteira na tela ("+2", não "+1,57"); o que é menor que 1 aparece como "+<1". */
+const rep = (r: number) => (r <= 0 ? '0' : r < 1 ? '<1' : formatar(Math.round(r)))
 
-function textoRestante(e: Expedicao, agora: number): string {
-  const s = Math.ceil(segundosParaVoltar(e, agora))
-  return `volta em ${formatarDuracao(s)}`
-}
-
-function CartaoAndamento({ e }: { e: Expedicao }) {
+/** Uma linha por herói fora: andando (com barra) ou de volta (com o loot). */
+function LinhaAndamento({ e }: { e: Expedicao }) {
   const agora = useGame((s) => s.jogo.lastTick)
   const heroi = useGame((s) => acharHeroi(s.jogo, e.heroi))
-  const coletar = useGame((s) => s.coletarExpedicao)
   const def = DEF_EXPEDICAO[e.tipo]
   const chegou = voltou(e, agora)
   const andamento = Math.min(1, Math.max(0, (agora - e.inicio) / (e.fim - e.inicio)))
   const nome = heroi?.nome ?? 'Herói'
-
-  if (!chegou) {
-    return (
-      <li className="andamento painel quente" aria-label={`${nome} em ${def.nome}`}>
-        <Sprite nome={`heroi_${heroi?.classe ?? 'guerreiro'}_andando`} escala={2} fps={5} />
-        <div className="andamento-texto">
-          <span className="andamento-titulo">
-            {nome} · {def.nome}
-          </span>
-          <div
-            className="barra barra-fina"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.floor(andamento * 100)}
-            aria-label={`Progresso da expedição de ${nome}`}
-          >
-            <div className="barra-cheia" style={{ width: `${andamento * 100}%` }} />
-          </div>
-          <span className="estacao-dica">{textoRestante(e, agora)}</span>
-        </div>
-      </li>
-    )
-  }
+  const classe = heroi?.classe ?? 'guerreiro'
 
   return (
-    <li className={`andamento painel ${e.sucesso ? 'pronto' : 'falhou'}`} aria-label={`${nome} voltou de ${def.nome}`}>
-      <Sprite nome={`heroi_${heroi?.classe ?? 'guerreiro'}`} escala={2} />
+    <li className={`andamento ${chegou ? (e.sucesso ? 'pronto' : 'falhou') : 'quente'}`} aria-label={chegou ? `${nome} voltou de ${def.nome}` : `${nome} em ${def.nome}`}>
+      <Sprite nome={chegou ? `heroi_${classe}` : `heroi_${classe}_andando`} escala={2} fps={5} />
       <div className="andamento-texto">
         <span className="andamento-titulo">
-          {nome} voltou · {def.nome}
+          {nome} · {def.nome}
         </span>
-        <span className={e.sucesso ? 'resultado-ok' : 'resultado-falha'}>
-          {e.sucesso ? 'Sucesso' : 'Falhou, mas voltou com um pouco'}
-        </span>
-        <span className="loot">
-          <span>
-            <Sprite nome="icone_moeda" escala={1} /> +{formatar(e.moedas)}
+        {chegou ? (
+          <span className="loot">
+            {!e.sucesso && <span className="resultado-falha">Falhou</span>}
+            <span>
+              <Sprite nome="icone_moeda" escala={1} /> +{formatar(e.moedas)}
+            </span>
+            {e.reputacao > 0 && (
+              <span>
+                <Sprite nome="icone_reputacao" escala={1} /> +{rep(e.reputacao)}
+              </span>
+            )}
+            {e.fragmentos > 0 && (
+              <span>
+                <Sprite nome="icone_fragmento" escala={1} /> +{e.fragmentos}
+              </span>
+            )}
           </span>
-          <span>+{formatar(e.xp)} XP</span>
-          {e.reputacao > 0 && (
-            <span>
-              <Sprite nome="icone_reputacao" escala={1} /> +{formatarTaxa(e.reputacao)}
-            </span>
-          )}
-          {e.fragmentos > 0 && (
-            <span>
-              <Sprite nome="icone_fragmento" escala={1} /> +{e.fragmentos}
-            </span>
-          )}
-        </span>
+        ) : (
+          <>
+            <div
+              className="barra barra-fina"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.floor(andamento * 100)}
+              aria-label={`Progresso da expedição de ${nome}`}
+            >
+              <div className="barra-cheia" style={{ width: `${andamento * 100}%` }} />
+            </div>
+            <span className="estacao-dica">{`volta em ${formatarDuracao(Math.ceil(segundosParaVoltar(e, agora)))}`}</span>
+          </>
+        )}
       </div>
-      <button type="button" className="botao botao-primario andamento-coletar" onClick={() => coletar(e.id)}>
-        Coletar
-      </button>
     </li>
   )
 }
 
-function CartaoExpedicao({
-  tipo,
-  heroi,
-  liberada,
-}: {
-  tipo: ExpedicaoId
-  heroi: Heroi | undefined
-  liberada: boolean
-}) {
+/** Uma expedição em duas linhas: nome e tempo; chance e o que rende. O botão manda o herói escolhido. */
+function CartaoExpedicao({ tipo, heroi, liberada }: { tipo: ExpedicaoId; heroi: Heroi | undefined; liberada: boolean }) {
   const enviar = useGame((s) => s.enviarExpedicao)
   const jogo = useGame((s) => s.jogo)
   const def = DEF_EXPEDICAO[tipo]
   const prev = heroi
     ? preverExpedicao(poderHeroi(heroi), DEF_CLASSE[heroi.classe].bonusLoot, tipo, bonusExpedicao(jogo), jogo.reputacao)
     : null
-  const arriscada = prev !== null && prev.chance < 0.3
+  const faixa = prev === null ? '' : prev.chance >= 0.75 ? 'boa' : prev.chance >= 0.4 ? 'media' : 'ruim'
 
   return (
-    <li className={`expedicao painel ${liberada ? '' : 'fechada'}`} aria-label={def.nome}>
-      <div className="expedicao-topo">
-        <h4>{def.nome}</h4>
-        <span className="expedicao-meta">
-          {duracao(def.segundos)} · dificuldade {def.dificuldade}
+    <li className={`expedicao compacta ${liberada ? '' : 'fechada'}`} aria-label={def.nome}>
+      <div className="expedicao-info">
+        <span className="expedicao-nome">
+          {def.nome} <small>· {formatarDuracao(def.segundos)}</small>
         </span>
-      </div>
-
-      {liberada && prev ? (
-        <>
-          <div className="chance">
-            <span>
-              Chance de sucesso <strong>{pct(prev.chance)}</strong>
+        {liberada && prev && (
+          <span className="expedicao-resumo">
+            <span className={`chance-texto ${faixa}`} aria-label={`Chance de sucesso ${pct(prev.chance)}`}>
+              {pct(prev.chance)}
             </span>
-            <div
-              className="barra barra-fina"
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(prev.chance * 100)}
-              aria-label="Chance de sucesso"
-            >
-              <div className="barra-cheia" style={{ width: `${prev.chance * 100}%` }} />
-            </div>
-          </div>
-          <p className="loot-esperado">
             <span>
               <Sprite nome="icone_moeda" escala={1} /> {formatar(prev.moedas)}
             </span>
-            <span>{formatar(prev.xp)} XP</span>
             <span>
-              <Sprite nome="icone_reputacao" escala={1} /> {formatarTaxa(prev.reputacao)}
+              <Sprite nome="icone_reputacao" escala={1} /> {rep(prev.reputacao)}
             </span>
-            <span>
-              <Sprite nome="icone_fragmento" escala={1} /> {pct(prev.chanceFragmento)}
-            </span>
-          </p>
-          {arriscada && <p className="estacao-aviso">Arriscado: se falhar, volta com só 30 % do loot.</p>}
-        </>
-      ) : (
-        <p className="estacao-dica">
-          {liberada ? 'Recrute um herói na Guilda para mandar em expedição.' : 'Região bloqueada.'}
-        </p>
-      )}
-
+          </span>
+        )}
+      </div>
       <button
         type="button"
-        className="botao botao-primario botao-largo"
+        className="botao botao-primario expedicao-ir"
         disabled={!liberada || !heroi}
         onClick={() => heroi && enviar(heroi.id, tipo)}
+        aria-label={heroi ? `Mandar ${heroi.nome} para ${def.nome}` : `Sem herói livre para ${def.nome}`}
       >
-        {!liberada ? 'Bloqueada' : heroi ? `Mandar ${heroi.nome}` : 'Sem herói livre'}
+        Mandar
       </button>
     </li>
-  )
-}
-
-function Regiao({ id, heroi }: { id: RegiaoId; heroi: Heroi | undefined }) {
-  const jogo = useGame((s) => s.jogo)
-  const def = DEF_REGIAO[id]
-  const aberta = def.exige === null || chefeDerrotado(jogo, def.exige)
-
-  return (
-    <section className={`secao painel regiao ${aberta ? '' : 'fechada'}`} aria-label={def.nome}>
-      <div className="regiao-banner">
-        <Sprite nome={id === 'vale' ? 'regiao_vale' : 'regiao_serra'} escala={3} rotulo={def.nome} />
-      </div>
-      <div className="secao-topo">
-        <h2>{def.nome}</h2>
-        {!aberta && <span className="secao-contagem cheio">bloqueada</span>}
-      </div>
-      <p className="estacao-dica">{def.descricao}</p>
-      <ul className="expedicoes">
-        {EXPEDICOES.filter((t) => DEF_EXPEDICAO[t].regiao === id).map((t) => (
-          <CartaoExpedicao key={t} tipo={t} heroi={heroi} liberada={aberta && expedicaoLiberada(jogo, t)} />
-        ))}
-      </ul>
-      {id === 'vale' && <CartaoChefe chefe="golem" />}
-      {id === 'serra' && aberta && <CartaoChefe chefe="serpe" />}
-    </section>
   )
 }
 
@@ -212,139 +135,170 @@ function CartaoChefe({ chefe }: { chefe: ChefeId }) {
 
   const alternar = (id: number) => setFora((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]))
 
+  if (derrotado) {
+    return (
+      <p className="chefe-derrotado resultado-ok" aria-label={`Chefe: ${def.nome}, derrotado`}>
+        {def.nome}: derrotado.
+      </p>
+    )
+  }
+
   return (
     <article className="chefe painel" aria-label={`Chefe: ${def.nome}`}>
       <div className="chefe-topo">
         <Sprite nome={chefe === 'golem' ? 'chefe_golem' : 'chefe_serpe'} escala={2} rotulo={def.nome} />
         <div className="chefe-texto">
-          <h3>{def.nome}</h3>
-          <span className="estacao-dica">
-            PV {formatar(def.pv)} · ATQ {def.atq} · DEF {def.def}
-          </span>
-          <span className="estacao-dica">Ao cair: {def.libera}.</span>
+          <h3>Chefe: {def.nome}</h3>
+          <span className="estacao-dica">Vencer abre {def.libera}.</span>
         </div>
       </div>
 
-      {derrotado ? (
-        <p className="resultado-ok">Derrotado. {def.libera[0]!.toUpperCase() + def.libera.slice(1)} estão abertos.</p>
+      {jogo.herois.length === 0 ? (
+        <p className="estacao-dica">Recrute um herói na Guilda para enfrentar o chefe.</p>
       ) : (
         <>
-          <p className="estacao-dica">
-            Recompensa: {def.reputacao} de reputação, {def.fragmentos} fragmentos e {def.presente.tipo === 'machado' ? 'um machado lendário' : 'uma armadura lendária de aço'}.
-          </p>
-          {jogo.herois.length === 0 ? (
-            <p className="estacao-dica">Recrute um herói na Guilda para enfrentar o chefe.</p>
-          ) : (
-            <>
-              <fieldset className="equipe">
-                <legend>Equipe</legend>
-                {jogo.herois.map((h) => {
-                  const ocupado = emExpedicao(jogo, h.id)
-                  const marcado = !ocupado && !fora.includes(h.id)
-                  return (
-                    <label key={h.id} className={`equipe-membro ${marcado ? 'marcado' : ''} ${ocupado ? 'ocupado' : ''}`}>
-                      <input type="checkbox" checked={marcado} disabled={ocupado} onChange={() => alternar(h.id)} />
-                      <Sprite nome={`heroi_${h.classe}`} escala={2} />
-                      <span>
-                        {h.nome}
-                        <small>{ocupado ? 'em expedição' : `nível ${h.nivel}`}</small>
-                      </span>
-                    </label>
-                  )
-                })}
-              </fieldset>
+          <fieldset className="equipe">
+            <legend>Equipe</legend>
+            {jogo.herois.map((h) => {
+              const ocupado = emExpedicao(jogo, h.id)
+              const marcado = !ocupado && !fora.includes(h.id)
+              return (
+                <label key={h.id} className={`equipe-membro ${marcado ? 'marcado' : ''} ${ocupado ? 'ocupado' : ''}`}>
+                  <input type="checkbox" checked={marcado} disabled={ocupado} onChange={() => alternar(h.id)} />
+                  <Sprite nome={`heroi_${h.classe}`} escala={2} />
+                  <span>
+                    {h.nome}
+                    <small>{ocupado ? 'fora' : `nível ${h.nivel}`}</small>
+                  </span>
+                </label>
+              )
+            })}
+          </fieldset>
 
-              <p className={`previsao ${previsao?.vitoria ? 'vitoria' : 'recuo'}`} role="status">
-                {previsao === null
-                  ? 'Escolha ao menos um herói livre.'
-                  : previsao.vitoria
-                    ? `Previsão: vitória em ${previsao.rodadas} ${previsao.rodadas === 1 ? 'rodada' : 'rodadas'}.`
-                    : `Previsão: a equipe recua. ${def.nome} ficaria com ${formatar(previsao.pvChefeFinal)} de ${formatar(def.pv)} PV.`}
-              </p>
-              <button
-                type="button"
-                className="botao botao-primario botao-largo"
-                disabled={previsao === null}
-                onClick={() => lutar(chefe, escolhidos)}
-              >
-                {previsao?.vitoria ? `Lutar contra ${chefe === 'golem' ? 'o Golem' : 'a Serpe'}` : 'Tentar assim mesmo'}
-              </button>
-            </>
-          )}
+          <p className={`previsao ${previsao?.vitoria ? 'vitoria' : 'recuo'}`} role="status">
+            {previsao === null
+              ? 'Escolha ao menos um herói livre.'
+              : previsao.vitoria
+                ? 'Previsão: vitória.'
+                : `Previsão: a equipe perde. Faltariam ${formatar(previsao.pvChefeFinal)} de ${formatar(def.pv)} PV.`}
+          </p>
+          <button
+            type="button"
+            className={`botao botao-largo ${previsao?.vitoria ? 'botao-primario' : 'botao-secundario'}`}
+            disabled={previsao === null}
+            onClick={() => lutar(chefe, escolhidos)}
+          >
+            {previsao?.vitoria ? `Lutar contra ${chefe === 'golem' ? 'o Golem' : 'a Serpe'}` : 'Tentar assim mesmo'}
+          </button>
         </>
       )}
     </article>
   )
 }
 
-/** Aba Mapa: expedições em andamento, regiões e o chefe. */
+const CHEFE_DA_REGIAO: Record<RegiaoId, ChefeId> = { vale: 'golem', serra: 'serpe' }
+
+/** Aba Mapa: quem está fora, uma região por vez (Vale / Serra) e o chefe dela. */
 export function MapaScreen() {
   const jogo = useGame((s) => s.jogo)
   const coletarTodas = useGame((s) => s.coletarTodas)
   const [escolhido, setEscolhido] = useState<number | null>(null)
+  const aberta = (r: RegiaoId) => DEF_REGIAO[r].exige === null || chefeDerrotado(jogo, DEF_REGIAO[r].exige)
+  // Abre na região mais longe que o jogador já alcançou.
+  const [regiao, setRegiao] = useState<RegiaoId>(() => [...REGIOES].reverse().find(aberta) ?? 'vale')
 
   const livres = jogo.herois.filter((h) => !emExpedicao(jogo, h.id))
   const heroi = livres.find((h) => h.id === escolhido) ?? livres[0]
   const pendentes = retornosPendentes(jogo, jogo.lastTick).length
+  const regiaoAberta = aberta(regiao)
+
+  if (jogo.herois.length === 0) {
+    return (
+      <section className="secao painel" aria-label="Sem heróis">
+        <h2>Mapa</h2>
+        <p className="estacao-dica">Recrute um herói na Guilda para explorar o Vale da Bigorna.</p>
+      </section>
+    )
+  }
 
   return (
     <>
       {jogo.expedicoes.length > 0 && (
         <section className="secao painel" aria-label="Expedições em andamento">
           <div className="secao-topo">
-            <h2>Em expedição</h2>
-            {pendentes > 1 && (
+            <h2>Fora da guilda</h2>
+            {pendentes > 0 && (
               <button type="button" className="botao botao-primario botao-pequeno" onClick={coletarTodas}>
-                Coletar tudo ({pendentes})
+                {pendentes === 1 ? 'Coletar' : `Coletar tudo (${pendentes})`}
               </button>
             )}
           </div>
           <ul className="andamentos">
             {jogo.expedicoes.map((e) => (
-              <CartaoAndamento key={e.id} e={e} />
+              <LinhaAndamento key={e.id} e={e} />
             ))}
           </ul>
         </section>
       )}
 
-      {jogo.herois.length > 0 && (
-        <section className="secao painel" aria-label="Escolher herói">
-          <h2>Quem vai?</h2>
-          {livres.length === 0 ? (
-            <p className="estacao-dica">Todos os heróis estão fora. Espere a volta ou colete o loot.</p>
-          ) : (
-            <div className="escolha-heroi" role="radiogroup" aria-label="Herói da expedição">
-              {livres.map((h) => (
-                <button
-                  key={h.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={heroi?.id === h.id}
-                  className={`escolha ${heroi?.id === h.id ? 'marcada' : ''}`}
-                  onClick={() => setEscolhido(h.id)}
-                >
-                  <Sprite nome={`heroi_${h.classe}`} escala={2} />
-                  <span>{h.nome}</span>
-                  <small>poder {formatar(poderHeroi(h))}</small>
-                </button>
+      <section className="secao painel" aria-label="Escolher herói">
+        <h2>Quem vai?</h2>
+        {livres.length === 0 ? (
+          <p className="estacao-dica">Todos estão fora. Espere a volta.</p>
+        ) : (
+          <div className="escolha-heroi" role="radiogroup" aria-label="Herói da expedição">
+            {livres.map((h) => (
+              <button
+                key={h.id}
+                type="button"
+                role="radio"
+                aria-checked={heroi?.id === h.id}
+                className={`escolha ${heroi?.id === h.id ? 'marcada' : ''}`}
+                onClick={() => setEscolhido(h.id)}
+              >
+                <Sprite nome={`heroi_${h.classe}`} escala={2} />
+                <span>{h.nome}</span>
+                <small>poder {formatar(poderHeroi(h))}</small>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <div className="sub-abas" role="tablist" aria-label="Regiões">
+        {REGIOES.map((r) => (
+          <button
+            key={r}
+            type="button"
+            role="tab"
+            aria-selected={regiao === r}
+            className={`sub-aba ${regiao === r ? 'ativa' : ''}`}
+            onClick={() => setRegiao(r)}
+          >
+            {DEF_REGIAO[r].nome}
+            {!aberta(r) && <small className="sub-aba-trava"> · bloqueada</small>}
+          </button>
+        ))}
+      </div>
+
+      <section className={`secao painel regiao ${regiaoAberta ? '' : 'fechada'}`} aria-label={DEF_REGIAO[regiao].nome}>
+        <div className="regiao-banner">
+          <Sprite nome={regiao === 'vale' ? 'regiao_vale' : 'regiao_serra'} escala={3} rotulo={DEF_REGIAO[regiao].nome} />
+        </div>
+        {regiaoAberta ? (
+          <>
+            <ul className="expedicoes">
+              {EXPEDICOES.filter((t) => DEF_EXPEDICAO[t].regiao === regiao).map((t) => (
+                <CartaoExpedicao key={t} tipo={t} heroi={heroi} liberada={expedicaoLiberada(jogo, t)} />
               ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {jogo.herois.length === 0 && (
-        <section className="secao painel" aria-label="Sem heróis">
-          <h2>Mapa</h2>
-          <p className="estacao-dica">
-            As terras além do vilarejo esperam. Recrute um herói na Guilda para explorar o Vale da Bigorna.
-          </p>
-        </section>
-      )}
-
-      {REGIOES.map((id) => (
-        <Regiao key={id} id={id} heroi={heroi} />
-      ))}
+            </ul>
+            <p className="estacao-dica expedicao-legenda">Chance de sucesso, moedas e reputação, para {heroi?.nome ?? 'o herói escolhido'}.</p>
+            <CartaoChefe chefe={CHEFE_DA_REGIAO[regiao]} />
+          </>
+        ) : (
+          <p className="estacao-aviso">Bloqueada. Derrote o {DEF_CHEFE[DEF_REGIAO[regiao].exige ?? 'golem'].nome} no Vale para abrir.</p>
+        )}
+      </section>
     </>
   )
 }

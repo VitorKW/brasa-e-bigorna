@@ -29,7 +29,6 @@ function CartaoConstrucao({ id }: { id: ConstrucaoId }) {
         <div className="construcao-texto">
           <h3>{def.nome}</h3>
           <span className="construcao-efeito">{def.efeito}</span>
-          <span className="estacao-dica">{def.descricao}</span>
         </div>
       </div>
 
@@ -76,32 +75,45 @@ function CartaoConstrucao({ id }: { id: ConstrucaoId }) {
   )
 }
 
-/** Aba Vilarejo: construções liberadas por reputação (que não se gasta) e pagas com moedas. */
+/** Aba Vilarejo: primeiro as encomendas (têm prazo), depois as obras. As prontas viram uma fileira de selos. */
 export function VilarejoScreen() {
   const reputacao = useGame((s) => s.jogo.reputacao)
-  const construidas = useGame((s) => s.jogo.construcoes.length)
+  const construcoes = useGame((s) => s.jogo.construcoes)
+  const feitas = CONSTRUCOES.filter((id) => construcoes.includes(id))
+  const faltam = CONSTRUCOES.filter((id) => !construcoes.includes(id))
 
   return (
     <>
+      <EncomendasPanel />
+
       <section className="secao painel" aria-label="Construções">
         <div className="secao-topo">
-          <h2>Vilarejo</h2>
+          <h2>Obras</h2>
           <span className="secao-contagem">
-            {construidas}/{CONSTRUCOES.length}
+            {feitas.length}/{CONSTRUCOES.length}
           </span>
         </div>
-        <p className="estacao-dica">
-          <Sprite nome="icone_reputacao" escala={1} /> {formatar(reputacao)} de reputação. Ela só abre portas: não se gasta.
-          Cada obra também custa moedas.
+        <p className="estacao-dica dica-icone">
+          <Sprite nome="icone_reputacao" escala={1} /> {formatar(reputacao)} de reputação: ela abre as obras e não se gasta.
         </p>
-        <ul className="construcoes">
-          {CONSTRUCOES.map((id) => (
-            <CartaoConstrucao key={id} id={id} />
-          ))}
-        </ul>
+        {feitas.length > 0 && (
+          <ul className="obras-feitas" aria-label="Construídas">
+            {feitas.map((id) => (
+              <li key={id} title={DEF_CONSTRUCAO[id].efeito}>
+                <Sprite nome={`construcao_${id}`} escala={1} />
+                <span>{DEF_CONSTRUCAO[id].nome}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {faltam.length > 0 && (
+          <ul className="construcoes">
+            {faltam.map((id) => (
+              <CartaoConstrucao key={id} id={id} />
+            ))}
+          </ul>
+        )}
       </section>
-
-      <EncomendasPanel />
     </>
   )
 }

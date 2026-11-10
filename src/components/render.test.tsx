@@ -143,7 +143,7 @@ describe('render da aba Mapa', () => {
   it('mostra as duas regiões; a Serra Cinzenta fica bloqueada até o Golem', () => {
     comEstado(meioDeJogo())
     const html = renderToString(<MapaScreen />)
-    for (const texto of ['Vale da Bigorna', 'Serra Cinzenta', 'Trilha do Riacho', 'Passo dos Ventos', 'Chance de sucesso', 'Mandar Bento', 'bloqueada', 'Bloqueada']) {
+    for (const texto of ['Vale da Bigorna', 'Serra Cinzenta', 'Trilha do Riacho', 'Chance de sucesso', 'Mandar Bento', 'bloqueada']) {
       expect(html, texto).toContain(texto)
     }
   })
@@ -152,14 +152,16 @@ describe('render da aba Mapa', () => {
     comEstado(meioDeJogo())
     const html = renderToString(<MapaScreen />)
     expect(html).toContain('Golem de Escória')
-    expect(html).toContain('Previsão: a equipe recua')
+    expect(html).toContain('Previsão: a equipe perde')
     expect(html).toContain('Equipe')
   })
 
   it('depois do Golem a região 2 abre e o chefe aparece como derrotado', () => {
     comEstado(meioDeJogo(true))
     const html = renderToString(<MapaScreen />)
-    expect(html).toContain('Derrotado')
+    // abre direto na região mais longe já alcançada
+    expect(html).toContain('Passo dos Ventos')
+    expect(html).toContain('Serpe de Cinza')
     expect(html).not.toContain('Bloqueada')
   })
 
@@ -261,14 +263,19 @@ describe('aba Vilarejo', () => {
   it('construída aparece como tal; a Muralha pede a Serpe', () => {
     comEstado({ ...meioDeJogo(true), reputacao: 1500, construcoes: ['armazem'] })
     const saida = html(<VilarejoScreen />)
-    expect(saida).toContain('Construída.')
+    expect(saida).toContain('aria-label="Construídas"')
+    expect(saida).toContain('Armazém')
     expect(saida).toContain('Antes, derrote Serpe de Cinza no Mapa.')
   })
 })
 
 describe('aba Reforjar', () => {
-  it('trancada até a Muralha: explica o que falta e mostra a árvore de talentos', () => {
+  it('trancada até a Muralha: explica o que falta; a árvore só aparece com brasa', () => {
     comEstado(meioDeJogo(true))
+    const semBrasa = html(<ReforjarScreen />)
+    expect(semBrasa).toContain('Talentos')
+    expect(semBrasa).not.toContain('Fornalheiro')
+    comEstado({ ...meioDeJogo(true), brasas: 1 })
     const saida = html(<ReforjarScreen />)
     for (const texto of ['trancado', 'Derrotar a Serpe de Cinza', 'Construir a Muralha', 'Talentos', 'Fornalheiro', 'Mestre de forja', 'Capitão da guilda']) {
       expect(saida, texto).toContain(texto)
@@ -307,7 +314,7 @@ describe('aba Reforjar', () => {
   })
 
   it('talento comprado aparece como aprendido', () => {
-    comEstado({ ...meioDeJogo(true), talentos: ['fornalheiro_1'] })
+    comEstado({ ...meioDeJogo(true), talentos: ['fornalheiro_1'], reforjas: 1 })
     expect(html(<ReforjarScreen />)).toContain('Aprendido')
   })
 })
@@ -318,10 +325,10 @@ describe('Serpe de Cinza no Mapa', () => {
     expect(html(<MapaScreen />)).not.toContain('Serpe de Cinza')
     comEstado(meioDeJogo(true))
     const saida = html(<MapaScreen />)
-    for (const texto of ['Serpe de Cinza', 'PV 33 K', 'a Muralha e o Reforjar', 'Tentar assim mesmo', 'armadura lendária de aço']) {
+    for (const texto of ['Serpe de Cinza', 'Faltariam', 'a Muralha e o Reforjar', 'Tentar assim mesmo']) {
       expect(saida, texto).toContain(texto)
     }
-    expect(saida).toContain('Previsão: a equipe recua. Serpe de Cinza ficaria com')
+    expect(saida).toContain('Previsão: a equipe perde.')
   })
 })
 

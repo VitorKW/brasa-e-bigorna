@@ -152,7 +152,7 @@ function Previa() {
         <div>
           <span className="previa-numero">+{p.brasasGanhas}</span>
           <span className="estacao-dica">
-            brasas por {formatar(p.moedasDoCiclo)} moedas neste ciclo (raiz de moedas / 1 M)
+            brasas por {formatar(p.moedasDoCiclo)} moedas ganhas neste ciclo
           </span>
         </div>
       </div>
@@ -229,10 +229,7 @@ function No({ id }: { id: TalentoId }) {
   return (
     <li className={`no ${comprado ? 'comprado' : ''} ${motivo === 'pre-requisito' ? 'bloqueado' : ''}`} aria-label={def.nome}>
       <div className="no-texto">
-        <span className="no-nome">
-          {def.nome}
-          <small> · tier {def.tier}</small>
-        </span>
+        <span className="no-nome">{def.nome}</span>
         <span className="no-desc">{def.descricao}</span>
         {motivo === 'pre-requisito' && pre && <span className="estacao-dica">Exige {DEF_TALENTO[pre].nome}.</span>}
       </div>
@@ -278,6 +275,22 @@ function Ramo({ ramo }: { ramo: RamoId }) {
 export function ReforjarScreen() {
   const jogo = useGame((s) => s.jogo)
   const livre = temConstrucao(jogo, 'muralha')
+  // Antes do primeiro Reforjar a árvore só confunde: 12 talentos que ninguém pode comprar ainda.
+  const semBrasaNenhuma = jogo.brasas === 0 && jogo.reforjas === 0
+
+  if (semBrasaNenhuma) {
+    return (
+      <>
+        {livre ? <Previa /> : <Trancado />}
+        <section className="secao painel" aria-label="Talentos">
+          <h2>Talentos</h2>
+          <p className="estacao-dica">
+            Cada Reforjar rende Brasas Ancestrais. Com elas você aprende talentos que valem para sempre.
+          </p>
+        </section>
+      </>
+    )
+  }
 
   return (
     <>
