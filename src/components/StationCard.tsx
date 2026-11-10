@@ -61,13 +61,10 @@ export function StationCard(p: Props) {
           </span>
           <Flutuantes itens={itens} onFim={remover} subida={22} />
         </div>
-        {p.parada ? (
-          <p className="estacao-aviso">{p.mensagemParada}</p>
-        ) : (
-          <p className="estacao-dica">
-            Próximo: {formatarTaxa(p.proximaSaida)}/s
-            {p.proximoMarco ? ` · dobra no nível ${p.proximoMarco}` : ''}
-          </p>
+        {/* Só o que pede ação: parada. O "próximo X/s" polui e não muda a decisão (o botão já diz o preço). */}
+        {p.parada && <p className="estacao-aviso">{p.mensagemParada}</p>}
+        {!p.parada && p.proximoMarco !== null && p.proximoMarco - p.nivel <= 5 && (
+          <p className="estacao-dica">Dobra a produção no nível {p.proximoMarco}.</p>
         )}
       </div>
 

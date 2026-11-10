@@ -6,6 +6,7 @@ import { CombateReplay } from './components/CombateReplay.tsx'
 import { ForgeScreen } from './components/ForgeScreen.tsx'
 import { GuildaScreen } from './components/GuildaScreen.tsx'
 import { MapaScreen } from './components/MapaScreen.tsx'
+import { ObjetivoBanner } from './components/ObjetivoBanner.tsx'
 import { ReforjarScreen } from './components/ReforjarScreen.tsx'
 import { OfflineModal } from './components/OfflineModal.tsx'
 import { ResourceBar } from './components/ResourceBar.tsx'
@@ -31,10 +32,12 @@ export default function App() {
   const fecharResumo = useGame((s) => s.fecharResumo)
   const aba = useGame((s) => s.aba)
   const combate = useGame((s) => s.combate)
+  const subForja = useGame((s) => s.subForja)
 
   return (
     <div className="app">
       <ResourceBar />
+      <ObjetivoBanner />
       {atualizar && <AvisoAtualizacao onRecarregar={atualizar} onDepois={() => setAtualizar(null)} />}
       <main className="conteudo">
         {aba === 'forja' && <ForgeScreen />}
@@ -43,7 +46,7 @@ export default function App() {
         {aba === 'vilarejo' && <VilarejoScreen />}
         {aba === 'reforjar' && <ReforjarScreen />}
       </main>
-      {aba === 'forja' && <SellPanel />}
+      {aba === 'forja' && subForja === 'producao' && <SellPanel />}
       <TabBar />
       <ToastConquista />
       <BatidaModal />

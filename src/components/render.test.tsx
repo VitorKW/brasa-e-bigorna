@@ -36,12 +36,22 @@ function comEstado(jogo: GameState, extra: Partial<ReturnType<typeof useGame.get
 
 describe('render da aba Forja', () => {
   it('bigorna bloqueada mostra o custo de desbloqueio e os ferreiros', () => {
-    comEstado({ ...estadoInicial(0), moedas: 0 })
+    comEstado({ ...estadoInicial(0), moedas: 0 }, { subForja: 'bigorna' })
     const html = renderToString(<ForgeScreen />)
     expect(html).toContain('Construir bigorna')
-    expect(html).toContain('Ferreiros')
-    expect(html).toContain('Contratar')
     expect(html).not.toContain('Itens forjados')
+    comEstado({ ...estadoInicial(0), moedas: 0 }, { subForja: 'ferreiros' })
+    const ferreiros = renderToString(<ForgeScreen />)
+    expect(ferreiros).toContain('Ferreiros')
+    expect(ferreiros).toContain('Contratar')
+  })
+
+  it('as sub-abas separam produção, bigorna e ferreiros', () => {
+    comEstado({ ...estadoInicial(0), moedas: 0 }, { subForja: 'producao' })
+    const html = renderToString(<ForgeScreen />)
+    for (const t of ['Produção', 'Bigorna', 'Ferreiros', 'Mina', 'Fornalha']) expect(html, t).toContain(t)
+    expect(html).not.toContain('Construir bigorna')
+    expect(html).not.toContain('Contratar')
   })
 
   it('bigorna liberada mostra receitas, botões, automático, itens e a barra de progresso', () => {
@@ -54,11 +64,15 @@ describe('render da aba Forja', () => {
     s = alocar(contratar(s, 'cida'), 'cida', 'bigorna')
     s = forjar(s, 'escudo')
     s = forjar(s, 'espada') // vai para a fila
-    comEstado(s)
+    comEstado(s, { subForja: 'bigorna' })
     const html = renderToString(<ForgeScreen />)
-    for (const texto of ['Forjar com batida', 'Modo automático', 'Armadura', 'Escudo', 'Enfileirar', 'Fila de forja', 'Itens', 'Dona Cida', 'no posto']) {
+    for (const texto of ['Forjar com batida', 'Modo automático', 'Armadura', 'Escudo', 'Enfileirar', 'Fila de forja', 'Itens']) {
       expect(html, texto).toContain(texto)
     }
+    comEstado(s, { subForja: 'ferreiros' })
+    const ferreiros = renderToString(<ForgeScreen />)
+    for (const texto of ['Dona Cida', 'no posto']) expect(ferreiros, texto).toContain(texto)
+    comEstado(s, { subForja: 'bigorna' })
     expect(html).toContain('role="progressbar"')
   })
 
@@ -107,10 +121,10 @@ describe('render da aba Guilda', () => {
     expect(html).toContain('disabled')
   })
 
-  it('lista heróis com classe, nível, XP, atributos e espaços de equipamento', () => {
+  it('lista heróis com classe, nível, XP, poder e espaços de equipamento', () => {
     comEstado(meioDeJogo())
     const html = renderToString(<GuildaScreen />)
-    for (const texto of ['Bento', 'Dalva', 'XP', 'PV', 'ATQ', 'DEF', 'VEL', 'Arma', 'Escudo', 'Armadura', 'Elmo', 'Equipar']) {
+    for (const texto of ['Bento', 'Dalva', 'XP', 'Poder', 'Arma:', 'Escudo:', 'Armadura:', 'Elmo:', 'Equipar']) {
       expect(html, texto).toContain(texto)
     }
     // com 2 heróis e sem Golem, a 3ª vaga espera o chefe
@@ -120,8 +134,8 @@ describe('render da aba Guilda', () => {
   it('herói em expedição não pode ser equipado', () => {
     comEstado(partir(meioDeJogo(), 1, 'trilha', 0))
     const html = renderToString(<GuildaScreen />)
-    expect(html).toContain('Em expedição')
     expect(html).toContain('Em expedição: Trilha do Riacho')
+    expect(html).not.toContain('aria-label="Equipar Bento"')
   })
 })
 
@@ -169,37 +183,44 @@ describe('render da aba Mapa', () => {
 
 describe('render da aba Forja depois do Golem', () => {
   it('antes do Golem não há Forno de aço', () => {
-    comEstado(meioDeJogo())
+    comEstado(meioDeJogo(), { subForja: 'producao' })
     expect(renderToString(<ForgeScreen />)).not.toContain('Forno de aço')
   })
 
   it('depois do Golem o forno aparece por construir; a bigorna só oferece aço com o forno', () => {
-    comEstado(meioDeJogo(true))
+    comEstado(meioDeJogo(true), { subForja: 'producao' })
+    expect(renderToString(<ForgeScreen />)).toContain('Construir forno')
+    comEstado(meioDeJogo(true), { subForja: 'bigorna' })
     const html = renderToString(<ForgeScreen />)
-    expect(html).toContain('Construir forno')
     expect(html).not.toContain('aria-label="Material"')
     const comForno = { ...meioDeJogo(true), niveis: { ...meioDeJogo().niveis, forno: 2 } }
-    comEstado(comForno)
+    comEstado(comForno, { subForja: 'bigorna' })
     const html2 = renderToString(<ForgeScreen />)
     expect(html2).toContain('aria-label="Material"')
     expect(html2).toContain('Aço')
     expect(html2).toContain('Ferro')
-    expect(html2).toContain('Forno de aço')
+    comEstado(comForno, { subForja: 'producao' })
+    expect(renderToString(<ForgeScreen />)).toContain('Forno de aço')
   })
 })
 
 describe('barra de recursos', () => {
-  it('só mostra aço, fragmento e reputação depois que existem', () => {
-    comEstado({ ...estadoInicial(0) })
+  it('mostra só o que importa na aba: matéria-prima na Forja, reputação e fragmentos fora dela', () => {
+    comEstado({ ...estadoInicial(0) }, { aba: 'forja' })
     const nova = renderToString(<ResourceBar />)
     expect(nova).not.toContain('Fragmentos')
     expect(nova).not.toContain('Reputação')
     expect(nova).not.toContain('aço')
-    comEstado({ ...meioDeJogo(true), fragmentos: 5, niveis: { ...meioDeJogo().niveis, forno: 1 } })
-    const cheia = renderToString(<ResourceBar />)
-    expect(cheia).toContain('Fragmentos rúnicos: 5')
-    expect(cheia).toContain('Reputação: 150')
-    expect(cheia).toContain('Lingotes de aço')
+    const avancado = { ...meioDeJogo(true), fragmentos: 5, niveis: { ...meioDeJogo().niveis, forno: 1 } }
+    comEstado(avancado, { aba: 'forja' })
+    const forja = renderToString(<ResourceBar />)
+    expect(forja).toContain('Lingotes de aço')
+    expect(forja).not.toContain('Reputação')
+    comEstado(avancado, { aba: 'mapa' })
+    const mapa = renderToString(<ResourceBar />)
+    expect(mapa).toContain('Fragmentos rúnicos: 5')
+    expect(mapa).toContain('Reputação: 150')
+    expect(mapa).not.toContain('Minério')
   })
 })
 
@@ -306,9 +327,9 @@ describe('Serpe de Cinza no Mapa', () => {
 
 describe('brasas na barra de recursos', () => {
   it('só aparecem depois da primeira brasa', () => {
-    comEstado(meioDeJogo())
+    comEstado(meioDeJogo(), { aba: 'reforjar' })
     expect(html(<ResourceBar />)).not.toContain('Brasas Ancestrais')
-    comEstado({ ...meioDeJogo(), brasas: 7 })
+    comEstado({ ...meioDeJogo(), brasas: 7 }, { aba: 'reforjar' })
     expect(html(<ResourceBar />)).toContain('Brasas Ancestrais: 7')
   })
 })

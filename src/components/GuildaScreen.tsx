@@ -6,7 +6,7 @@ import { formatar, formatarCusto, formatarDuracao } from '../game/format.ts'
 import {
   CLASSES,
   DEF_CLASSE,
-  atributosHeroi,
+  poderHeroi,
   proximaVaga,
   xpParaNivel,
   type ClasseId,
@@ -14,7 +14,6 @@ import {
 } from '../game/herois.ts'
 import { NOME_SLOT, SLOTS, rotuloQualidade } from '../game/items.ts'
 import { useGame } from '../store.ts'
-import { GradeAtributos } from './Atributos.tsx'
 import { ConquistasSheet } from './ConquistasSheet.tsx'
 import { Dica } from './Dica.tsx'
 import { EquiparSheet } from './EquiparSheet.tsx'
@@ -28,12 +27,14 @@ function CartaoHeroi({ heroi, onEquipar }: { heroi: Heroi; onEquipar: (id: numbe
   const precisa = xpParaNivel(heroi.nivel)
   const pct = Math.min(100, Math.floor((heroi.xp / precisa) * 100))
   const voltouJa = expedicao ? voltou(expedicao, agora) : false
+  const irPara = useGame((s) => s.irPara)
+  const poderTotal = poderHeroi(heroi)
 
   let situacao = 'Na guilda, pronto para partir.'
   if (expedicao) {
     const nome = DEF_EXPEDICAO[expedicao.tipo].nome
     situacao = voltouJa
-      ? `Voltou de ${nome}. Colete o loot no Mapa.`
+      ? `Voltou de ${nome} com o loot.`
       : `Em expedição: ${nome}. Volta em ${formatarDuracao(Math.ceil(segundosParaVoltar(expedicao, agora)))}.`
   }
 
@@ -62,36 +63,45 @@ function CartaoHeroi({ heroi, onEquipar }: { heroi: Heroi; onEquipar: (id: numbe
         </div>
       </div>
 
-      <GradeAtributos a={atributosHeroi(heroi)} rotulo={`Atributos de ${heroi.nome}`} />
-
-      <ul className="heroi-slots" aria-label="Equipamento">
+      {/* Equipamento em uma linha: só o ícone com a cor da raridade. Atributos ficam no Equipar. */}
+      <ul className="heroi-slots compactos" aria-label="Equipamento">
         {SLOTS.map((s) => {
           const item = heroi.equipamento[s]
           return (
-            <li key={s} className="heroi-slot" style={item ? { borderColor: COR_QUALIDADE[item.qualidade] } : undefined}>
+            <li
+              key={s}
+              className="heroi-slot"
+              style={item ? { borderColor: COR_QUALIDADE[item.qualidade] } : undefined}
+              aria-label={`${NOME_SLOT[s]}: ${item ? rotuloQualidade(item.qualidade) : 'vazio'}`}
+            >
               {item ? <Sprite nome={`item_${item.tipo}_${item.material}`} escala={2} /> : <span className="slot-vazio" aria-hidden="true" />}
-              <span className="heroi-slot-nome">{NOME_SLOT[s]}</span>
-              <small style={item ? { color: COR_QUALIDADE[item.qualidade] } : undefined}>
-                {item ? rotuloQualidade(item.qualidade) : 'vazio'}
-              </small>
             </li>
           )
         })}
+        <li className="heroi-poder" aria-label={`Poder ${formatar(poderTotal)}`}>
+          <small>Poder</small>
+          <strong>{formatar(poderTotal)}</strong>
+        </li>
       </ul>
 
       <p className="estacao-dica" role="status">
         {situacao}
       </p>
 
-      <button
-        type="button"
-        className="botao botao-primario botao-largo"
-        disabled={expedicao !== undefined}
-        onClick={() => onEquipar(heroi.id)}
-        aria-label={`Equipar ${heroi.nome}`}
-      >
-        {expedicao ? 'Em expedição' : 'Equipar'}
-      </button>
+      {voltouJa ? (
+        <button type="button" className="botao botao-primario botao-largo" onClick={() => irPara('mapa')}>
+          Coletar no Mapa
+        </button>
+      ) : expedicao ? null : (
+        <button
+          type="button"
+          className="botao botao-primario botao-largo"
+          onClick={() => onEquipar(heroi.id)}
+          aria-label={`Equipar ${heroi.nome}`}
+        >
+          Equipar
+        </button>
+      )}
     </li>
   )
 }

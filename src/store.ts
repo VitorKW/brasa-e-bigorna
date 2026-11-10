@@ -66,6 +66,8 @@ function gravarSave(estado: GameState): void {
 }
 
 export type AbaId = 'forja' | 'guilda' | 'mapa' | 'vilarejo' | 'reforjar'
+/** A Forja se divide em três partes para não virar uma rolagem sem fim. */
+export type SubForja = 'producao' | 'bigorna' | 'ferreiros'
 
 /** Resultado de uma luta contra o chefe, para o replay. A recompensa já foi aplicada ao jogo. */
 export interface CombateAtivo {
@@ -77,6 +79,7 @@ export interface CombateAtivo {
 
 interface Store {
   aba: AbaId
+  subForja: SubForja
   jogo: GameState
   resumoOffline: ResumoOffline | null
   /** Último ganho de venda, para a UI mostrar o "+N" (id muda a cada venda). */
@@ -96,6 +99,7 @@ interface Store {
   /** Última entrega de encomenda (a UI mostra o morador agradecendo). Só UI. */
   ultimaEntrega: { id: number; entrega: Entrega } | null
   irPara: (aba: AbaId) => void
+  irParaForja: (sub: SubForja) => void
   avancar: (now: number) => void
   melhorar: (estacao: EstacaoId) => void
   vender: (recurso: RecursoId | 'tudo') => void
@@ -165,6 +169,7 @@ let contadorEntrega = 0
 
 export const useGame = create<Store>((set, get) => ({
   aba: 'forja',
+  subForja: 'producao',
   ...iniciar(),
   ultimoGanho: null,
   ultimoForjado: null,
@@ -175,6 +180,7 @@ export const useGame = create<Store>((set, get) => ({
   ultimaEntrega: null,
 
   irPara: (aba) => set({ aba, ultimoReforjar: null }),
+  irParaForja: (sub) => set({ aba: 'forja', subForja: sub, ultimoReforjar: null }),
 
   avancar: (now) => {
     const { jogo } = get()

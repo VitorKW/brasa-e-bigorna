@@ -6,7 +6,6 @@ import {
   estoqueDe,
   inventarioCheio,
   motivoParaNaoIniciar,
-  tempoForjaAtual,
   type MotivoBloqueio,
 } from '../game/bigorna.ts'
 import { custoProximoNivel, podeComprar } from '../game/economy.ts'
@@ -36,7 +35,6 @@ const TEXTO_BLOQUEIO: Record<MotivoBloqueio, string> = {
   'inventario-cheio': 'Inventário cheio. Venda itens para forjar.',
 }
 
-const segundos = (n: number) => `${n.toFixed(1).replace('.', ',').replace(',0', '')} s`
 
 function Faiscas() {
   // 8 faíscas saindo do ponto de impacto; cada uma tem direção própria via variáveis CSS.
@@ -152,9 +150,6 @@ export function BigornaCard() {
           </span>
           <Flutuantes itens={itens} onFim={remover} subida={26} />
         </div>
-        <p className="estacao-dica">
-          Qualidade de {faixa.min} a {faixa.max} pontos · forja {segundos(tempoForjaAtual(jogo, escolhida))}
-        </p>
       </div>
 
       {forja && (
@@ -211,7 +206,7 @@ export function BigornaCard() {
               <Sprite nome={`item_${tipo}_${material}`} escala={2} />
               <span className="receita-nome">{NOME_TIPO[tipo]}</span>
               <span className={`receita-info ${faltaLingote ? 'falta' : ''}`}>
-                <Sprite nome={material === 'aco' ? 'icone_lingote_aco' : 'icone_lingote'} escala={1} /> {r.lingotes} · {segundos(tempoForjaAtual(jogo, tipo))}
+                <Sprite nome={material === 'aco' ? 'icone_lingote_aco' : 'icone_lingote'} escala={1} /> {r.lingotes}
               </span>
               <span className="receita-valor">
                 <Sprite nome="icone_moeda" escala={1} /> {formatar(r.valorBase * MULT_MATERIAL[material])}
@@ -241,7 +236,7 @@ export function BigornaCard() {
         </button>
       </div>
       <p id="dica-batida" className="estacao-dica forja-dica">
-        {aviso || (ocupada && filaCheia ? 'A fila está cheia.' : 'A batida dura 3 s e nunca piora o item.')}
+        {aviso || (ocupada && filaCheia ? 'A fila está cheia.' : 'Com batida: acerte o ritmo e o item sai melhor.')}
       </p>
 
       <button

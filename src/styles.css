@@ -124,7 +124,7 @@ p {
 /* Barra de recursos. */
 .barra-recursos {
   margin: 8px var(--espaco) 0;
-  padding: 8px 10px;
+  padding: 8px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
@@ -153,7 +153,7 @@ p {
 }
 
 .barra-recursos.compacta .chip-valor {
-  font-size: 17px;
+  font-size: 15px;
 }
 
 .chip-moedas .chip-valor {
@@ -2254,4 +2254,158 @@ p {
 .aviso-atualizacao-botoes {
   display: flex;
   gap: 8px;
+}
+
+/* ---------- Simplificação: objetivo, sub-abas da forja, venda compacta, herói compacto ---------- */
+
+/* Objetivo: uma linha fixa abaixo dos recursos dizendo o que fazer agora. */
+.objetivo {
+  margin: 0 var(--espaco);
+  padding: 8px 12px 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 10px;
+  text-align: left;
+  color: var(--texto);
+  font: inherit;
+  cursor: pointer;
+  border-color: var(--laranja);
+  position: relative;
+  overflow: hidden;
+}
+
+.objetivo.aqui {
+  cursor: default;
+  border-color: var(--aco);
+}
+
+.objetivo-rotulo {
+  grid-column: 1 / -1;
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--laranja);
+}
+
+.objetivo-texto {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.objetivo-ir {
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--amarelo);
+  white-space: nowrap;
+}
+
+.objetivo-barra {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--aco-desligado);
+}
+
+.objetivo-barra > span {
+  display: block;
+  height: 100%;
+  background: var(--laranja);
+  transition: width 0.4s ease;
+}
+
+/* Sub-abas da Forja: Produção / Bigorna / Ferreiros. */
+.sub-abas {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 8px;
+  background: var(--carvao);
+  border: 1px solid var(--aco);
+  border-radius: var(--raio);
+}
+
+.sub-aba {
+  position: relative;
+  min-height: 40px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--texto-suave);
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.sub-aba.ativa {
+  background: var(--aco);
+  color: var(--texto);
+}
+
+.ponto-aviso {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brasa);
+  box-shadow: 0 0 6px var(--brasa);
+}
+
+/* Venda: um botão grande e o "Separar" ao lado. */
+.vender-linha {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.vender-grade + .vender-linha {
+  margin-top: 8px;
+}
+
+.vender-tudo {
+  justify-content: space-between;
+}
+
+.vender-separar {
+  padding: 0 14px;
+}
+
+/* Herói: equipamento numa linha, com o poder ao lado. */
+.heroi-slots.compactos {
+  grid-template-columns: repeat(4, 44px) 1fr;
+  align-items: stretch;
+}
+
+.heroi-slots.compactos .heroi-slot {
+  padding: 4px 2px;
+  justify-content: center;
+}
+
+.heroi-poder {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  padding-right: 4px;
+}
+
+.heroi-poder small {
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+
+.heroi-poder strong {
+  font-family: var(--fonte-titulo);
+  font-size: 22px;
+  color: var(--amarelo);
 }

@@ -12,7 +12,7 @@ import { chefeDerrotado } from '../game/chefe.ts'
 import { custoProximoNivel, podeComprar } from '../game/economy.ts'
 import { formatarCusto } from '../game/format.ts'
 import { multiplicadorEstacao } from '../game/ferreiros.ts'
-import { useGame } from '../store.ts'
+import { useGame, type SubForja } from '../store.ts'
 import { BigornaCard } from './BigornaCard.tsx'
 import { FerreirosPanel } from './FerreirosPanel.tsx'
 import { Dica } from './Dica.tsx'
@@ -31,22 +31,78 @@ function Conector({ texto, ativo }: { texto: string; ativo: boolean }) {
   )
 }
 
-/** Cadeia: mina e carvoaria -> fornalha -> bigorna, mais itens e ferreiros. */
+const SUBS: readonly { id: SubForja; nome: string }[] = [
+  { id: 'producao', nome: 'Produção' },
+  { id: 'bigorna', nome: 'Bigorna' },
+  { id: 'ferreiros', nome: 'Ferreiros' },
+]
+
+/** Produção / Bigorna / Ferreiros: uma coisa de cada vez na tela. */
+function SubAbas() {
+  const sub = useGame((s) => s.subForja)
+  const irParaForja = useGame((s) => s.irParaForja)
+  // Bigorna de pé e parada (sem automático): um ponto chama a atenção para ela.
+  const bigornaParada = useGame((s) => s.jogo.niveis.bigorna >= 1 && s.jogo.forja === null && !s.jogo.automatico)
+  return (
+    <div className="sub-abas" role="tablist" aria-label="Partes da forja">
+      {SUBS.map((x) => (
+        <button
+          key={x.id}
+          type="button"
+          role="tab"
+          aria-selected={sub === x.id}
+          className={`sub-aba ${sub === x.id ? 'ativa' : ''}`}
+          onClick={() => irParaForja(x.id)}
+        >
+          {x.nome}
+          {x.id === 'bigorna' && bigornaParada && sub !== 'bigorna' && <span className="ponto-aviso" aria-label="parada" />}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export function ForgeScreen() {
+  const sub = useGame((s) => s.subForja)
+  return (
+    <>
+      <SubAbas />
+      {sub === 'producao' && <Producao />}
+      {sub === 'bigorna' && (
+        <>
+          <BigornaDicas />
+          <section className="cadeia" aria-label="Bigorna">
+            <BigornaCard />
+          </section>
+          <ItensSecao />
+        </>
+      )}
+      {sub === 'ferreiros' && <FerreirosPanel />}
+    </>
+  )
+}
+
+function BigornaDicas() {
+  const jogo = useGame((s) => s.jogo)
+  return (
+    <Dica id="bigorna" visivel={jogo.niveis.bigorna >= 1 && jogo.itens.length === 0 && jogo.stats.itensForjados === 0}>
+      A bigorna transforma lingotes em peças. Escolha uma receita e toque em Forjar: a peça vale muito mais que os lingotes.
+    </Dica>
+  )
+}
+
+/** Cadeia: mina e carvoaria -> fornalha (-> forno de aço). Os lingotes seguem para a bigorna. */
+function Producao() {
   const jogo = useGame((s) => s.jogo)
   const melhorar = useGame((s) => s.melhorar)
   const { fornalha, gargalo } = analisarCadeia(jogo)
   const n = jogo.niveis
   const mult = (e: EstacaoProducao) => multiplicadorEstacao(jogo, e)
-  const bigornaTrabalhando = jogo.forja !== null
 
   return (
     <>
       <Dica id="melhorar" visivel={n.mina <= 3}>
         Venda o minério (botão embaixo) e toque em Melhorar para cavar mais rápido. Mina e carvoaria alimentam a fornalha, e a fornalha, a bigorna.
-      </Dica>
-      <Dica id="bigorna" visivel={n.bigorna >= 1 && jogo.itens.length === 0 && jogo.stats.itensForjados === 0}>
-        A bigorna transforma lingotes em peças. Escolha uma receita e toque em Forjar: a peça vale muito mais que os lingotes.
       </Dica>
       <section className="cadeia" aria-label="Estações da forja">
         <StationCard
@@ -108,13 +164,7 @@ export function ForgeScreen() {
         />
 
         <FornoDeAco />
-
-        <Conector texto="3 a 6 lingotes por item" ativo={bigornaTrabalhando} />
-        <BigornaCard />
       </section>
-
-      <ItensSecao />
-      <FerreirosPanel />
     </>
   )
 }
