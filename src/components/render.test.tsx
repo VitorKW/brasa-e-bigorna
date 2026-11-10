@@ -407,7 +407,7 @@ describe('Conquistas e ajustes', () => {
   it('a folha lista todas, marca as feitas e esconde as estatísticas até pedir', () => {
     comEstado({ ...meioDeJogo(), conquistas: ['golem'] })
     const saida = html(<ConquistasSheet onFechar={() => undefined} />)
-    for (const texto of ['Conquistas', '1/16', 'Golem derrotado', 'Primeiro lingote', 'Primeira lendária', 'Primeiro Reforjar', 'Na hora H', 'Ajustes', 'Som', 'desligado', 'role="dialog"']) {
+    for (const texto of ['Conquistas', '1/16', 'Golem derrotado', 'Primeiro lingote', 'Primeira lendária', 'Primeiro Reforjar', 'Na hora H', 'Ajustes', 'Som', 'ligado', 'role="dialog"']) {
       expect(saida, texto).toContain(texto)
     }
     expect(saida).toContain('aria-label="Golem derrotado: desbloqueada"')
@@ -513,5 +513,33 @@ describe('evolução visível', () => {
     const s = estadoInicial(0)
     comEstado({ ...s, niveis: { ...s.niveis, bigorna: 50 } }, { subForja: 'bigorna' })
     expect(renderToString(<ForgeScreen />)).toContain('Bigorna de pedra')
+  })
+})
+
+describe('vilarejo vivo', () => {
+  it('a cena mostra os lotes vazios e, depois, as obras construídas e a muralha', () => {
+    comEstado({ ...meioDeJogo(true), construcoes: [] })
+    const vazio = html(<VilarejoScreen />)
+    expect(vazio).toContain('Lote da obra Taverna, ainda por construir')
+    expect(vazio).not.toContain('vila-muralha')
+    comEstado({ ...meioDeJogo(true), construcoes: ['taverna', 'muralha'] })
+    const cheio = html(<VilarejoScreen />)
+    expect(cheio).toContain('Taverna, construída')
+    expect(cheio).toContain('vila-muralha')
+    expect(cheio).toContain('Lote da obra Mercado, ainda por construir')
+  })
+
+  it('quem tem encomenda aberta anda pela estrada', () => {
+    comEstado({ ...meioDeJogo(), encomendas: [pedidoAberto()] })
+    expect(html(<VilarejoScreen />)).toContain('Sargento Amaro, com uma encomenda')
+  })
+})
+
+describe('botão de som', () => {
+  it('fica na barra de recursos e reflete a opção', () => {
+    comEstado({ ...estadoInicial(0), som: true })
+    expect(html(<ResourceBar />)).toMatch(/role="switch" aria-checked="true" aria-label="Som"/)
+    comEstado({ ...estadoInicial(0), som: false })
+    expect(html(<ResourceBar />)).toMatch(/role="switch" aria-checked="false" aria-label="Som"/)
   })
 })

@@ -16,6 +16,7 @@ function Chip({ icone, valor, rotulo, escala }: { icone: SpriteNome; valor: numb
 export function ResourceBar() {
   const jogo = useGame((s) => s.jogo)
   const aba = useGame((s) => s.aba)
+  const alternarSom = useGame((s) => s.alternarSom)
   const ultimoGanho = useGame((s) => s.ultimoGanho)
   const ultimaColeta = useGame((s) => s.ultimaColeta)
   const { itens, adicionar, remover } = useFlutuantes()
@@ -49,7 +50,7 @@ export function ResourceBar() {
   const escala = compacta ? 1 : 2
 
   return (
-    <header className={`barra-recursos painel${compacta ? ' compacta' : ''}`} style={{ gridTemplateColumns: `repeat(${quantos}, minmax(0, 1fr))` }}>
+    <header className={`barra-recursos painel${compacta ? ' compacta' : ''}`} style={{ gridTemplateColumns: `repeat(${quantos}, minmax(0, 1fr)) auto` }}>
       {naForja && <Chip icone="icone_minerio" valor={jogo.recursos.minerio} rotulo="Minério" escala={escala} />}
       {naForja && <Chip icone="icone_carvao" valor={jogo.recursos.carvao} rotulo="Carvão" escala={escala} />}
       {naForja && <Chip icone="icone_lingote" valor={jogo.recursos.lingote} rotulo="Lingotes" escala={escala} />}
@@ -64,6 +65,16 @@ export function ResourceBar() {
       {temFragmento && <Chip icone="icone_fragmento" valor={jogo.fragmentos} rotulo="Fragmentos rúnicos" escala={escala} />}
       {temReputacao && <Chip icone="icone_reputacao" valor={jogo.reputacao} rotulo="Reputação" escala={escala} />}
       {temBrasa && <Chip icone="icone_brasa" valor={jogo.brasas} rotulo="Brasas Ancestrais" escala={escala} />}
+      <button
+        type="button"
+        className="botao-som"
+        role="switch"
+        aria-checked={jogo.som}
+        aria-label="Som"
+        onClick={alternarSom}
+      >
+        <Sprite nome={jogo.som ? 'icone_som' : 'icone_mudo'} escala={1} />
+      </button>
     </header>
   )
 }

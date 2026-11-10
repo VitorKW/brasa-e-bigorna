@@ -38,6 +38,11 @@ export type SpriteNome =
   | 'regiao_serra'
   | 'cena_forja'
   | 'carrinho'
+  | 'cena_vilarejo'
+  | 'cena_muralha'
+  | 'lote'
+  | 'icone_som'
+  | 'icone_mudo'
   | CamadaEstacao
   | CamadaHeroi
 
@@ -163,6 +168,11 @@ const SPRITES: Record<SpriteNome, Def> = {
   regiao_serra: { w: 96, h: 32, cor: '#4a4f5c', texto: '#f3e9dc', inicial: 'Serra' },
   cena_forja: { w: 176, h: 88, cor: '#2e2a30', texto: '#f3e9dc', inicial: '' },
   carrinho: { w: 16, h: 12, cor: '#5b5662', texto: '#f3e9dc', inicial: '' },
+  cena_vilarejo: { w: 176, h: 88, cor: '#6b8a4c', texto: '#f3e9dc', inicial: '' },
+  cena_muralha: { w: 176, h: 88, cor: '', texto: '', inicial: '', camada: true },
+  lote: { w: 32, h: 32, cor: '#4a2f22', texto: '#f3e9dc', inicial: '' },
+  icone_som: { w: 16, h: 16, cor: '#5b5662', texto: '#f3e9dc', inicial: '♪' },
+  icone_mudo: { w: 16, h: 16, cor: '#3a353d', texto: '#f3e9dc', inicial: '×' },
 }
 
 const urlDe = (nome: SpriteNome) => `${import.meta.env.BASE_URL}sprites/${nome}.png`
@@ -253,7 +263,8 @@ export function Sprite({ nome, escala = 2, quadros, fps = 6, rotulo }: Props) {
   // Carregando: uma caixa vazia do tamanho certo. O quadrado colorido piscando antes da arte era feio;
   // ele fica só para arquivo ausente de verdade.
   if (carregou === null && typeof window !== 'undefined') {
-    return <div className="sprite" style={{ width: largura, height: altura }} {...a11y} />
+    // span: sprites aparecem dentro de <p> e <button>, onde um <div> é HTML inválido.
+    return <span className="sprite" style={{ display: 'inline-block', width: largura, height: altura }} {...a11y} />
   }
 
   // Arquivo ausente (ou render no servidor, nos testes): quadrado com a cor da paleta e a inicial.

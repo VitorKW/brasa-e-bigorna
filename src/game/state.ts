@@ -140,7 +140,7 @@ export function estadoInicial(now: number, rng = 20261109): GameState {
     autoVenda: false,
     conquistas: [],
     stats: estatisticasIniciais(),
-    som: false,
+    som: true, // ligado em jogo novo; o botão de som fica na barra de recursos
     dicasVistas: [],
   }
 }

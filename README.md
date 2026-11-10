@@ -30,7 +30,7 @@ React 18 + TypeScript + Vite, com estado em Zustand e save no `localStorage`.
    melhores, em 3 h", pagas com 1,5 vez o valor e reputação.
 4. **Reforjar.** Com a Muralha, o vilarejo vira cidade: tudo zera, você ganha Brasas Ancestrais e compra talentos permanentes.
 5. **Sempre.** Fechar o app não para nada (produção offline com teto de 2 a 12 h), e cada abertura mostra o que aconteceu enquanto você
-   estava fora. Conquistas, estatísticas locais, venda automática e som opcional completam o MVP.
+   estava fora. Conquistas, estatísticas locais, venda automática e som (sintetizado, com botão para desligar) completam o MVP.
 
 Visual: a escala de calor do metal é informação (cinza frio = parado, laranja = trabalhando), painéis de aço, Barlow e Barlow Condensed,
 sem caixa alta, sem emoji como ícone, um único momento animado por tela. Mobile-first, retrato, alvos de toque de 48 px, sem monetização.
@@ -134,6 +134,16 @@ em vez de teto diário, porque um teto diário exigiria um relógio de dia, que 
   síncrono); o brilho de "subiu de nível" não remonta mais o cartão (remontar engolia toques de quem melhora rápido); o aviso de
   conquista saiu de cima do botão de vender.
 - *Sem terceiros em tempo de execução.* Fontes no build e backup do save por texto: o jogo não chama nenhum serviço externo.
+
+**Fatia 8: vilarejo vivo, som e combate com impacto.**
+- *Vilarejo como paisagem.* Um fundo (`art/fatia8.px.js`) com três casebres e um poço; cada obra entra no seu lote com um salto de poeira,
+  a Muralha é uma camada que fecha o horizonte, e os moradores com encomenda aberta andam no primeiro plano (com "!" quando dá para
+  entregar). Tocar numa obra, num lote ou num morador mostra o que é.
+- *Som sintetizado.* `audio.ts` descreve cada efeito como uma receita de notas (com deslize de frequência) e sopros de ruído filtrado
+  (picareta, martelo, fole, golpe), tocada com Web Audio: 20 efeitos e o crepitar da fornalha, sem nenhum arquivo. Os volumes foram
+  medidos renderizando cada receita num `OfflineAudioContext` (pico máximo ~0,5 de 1,0). Jogo novo começa com som; o botão fica na barra
+  de recursos.
+- *Combate.* Quem bate investe, quem apanha leva o tranco e pisca, o golpe que derruba treme a tela, e o chefe desaba.
 
 **Sim guloso de balanceamento.** `simular(horas, passo, opções)` joga o jogo com uma estratégia simples (compra a opção de melhor retorno por
 moeda, aloca ferreiros por força bruta, entrega encomendas, equipa o melhor kit, luta quando a previsão dá vitória) e mede os marcos. Com

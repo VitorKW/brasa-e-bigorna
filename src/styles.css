@@ -3109,3 +3109,231 @@ p {
   font: 13px/1.3 ui-monospace, Menlo, Consolas, monospace;
   resize: vertical;
 }
+
+/* ---------- Fatia 8: vilarejo vivo ---------- */
+.cena-vila {
+  background: #bfe0f2;
+}
+
+.vila-muralha {
+  position: absolute;
+  left: 0;
+  top: 0;
+  line-height: 0;
+  pointer-events: none;
+}
+
+.vila-muralha.nova {
+  animation: vila-ergue 1.1s ease-out;
+}
+
+@keyframes vila-ergue {
+  0% { clip-path: inset(100% 0 0 0); transform: translateY(6px); }
+  100% { clip-path: inset(0 0 0 0); transform: translateY(0); }
+}
+
+.vila-obra.lote {
+  opacity: 0.75;
+}
+
+.vila-obra.nova {
+  animation: vila-chega 0.7s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+@keyframes vila-chega {
+  0% { transform: translateY(-14px) scale(0.9, 1.1); opacity: 0; }
+  55% { transform: translateY(0) scale(1.08, 0.9); opacity: 1; }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+
+/* Poeira que sobe da base quando a obra assenta. */
+.vila-poeira {
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  bottom: -1px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(243, 233, 220, 0.9), rgba(243, 233, 220, 0));
+  animation: vila-poeira 0.9s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes vila-poeira {
+  0% { transform: scale(0.4, 1); opacity: 0; }
+  40% { transform: scale(1.3, 1.6); opacity: 1; }
+  100% { transform: scale(1.8, 2.2); opacity: 0; }
+}
+
+/* Moradores: o botão anda pela estrada e o corpo vira no fim de cada trecho. */
+.vila-andante {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: none;
+  line-height: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  animation: vila-anda var(--tempo) linear infinite alternate;
+}
+
+@keyframes vila-anda {
+  from { transform: translateX(0); }
+  to { transform: translateX(var(--passeio)); }
+}
+
+.vila-andante-corpo {
+  display: inline-block;
+  transform: scaleX(var(--vira));
+  animation:
+    vila-vira calc(var(--tempo) * 2) steps(1) infinite,
+    vila-passo 0.4s steps(2) infinite;
+}
+
+@keyframes vila-vira {
+  0% { scale: 1 1; }
+  50% { scale: -1 1; }
+}
+
+@keyframes vila-passo {
+  0% { translate: 0 0; }
+  50% { translate: 0 -1px; }
+}
+
+.vila-andante:focus-visible {
+  outline: 1px solid var(--carvao);
+}
+
+.vila-pronta {
+  position: absolute;
+  left: 50%;
+  top: -7px;
+  width: 7px;
+  margin-left: -3px;
+  border-radius: 2px;
+  background: var(--amarelo);
+  color: var(--carvao);
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 7px;
+  line-height: 8px;
+  text-align: center;
+  animation: convite-quica 0.8s ease-in-out infinite;
+}
+
+.vila-balao {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 3px;
+  padding: 2px 4px;
+  border-radius: 2px;
+  background: rgba(27, 22, 24, 0.9);
+  color: var(--texto);
+  font-family: var(--fonte-corpo);
+  font-size: 6px;
+  line-height: 1.25;
+  text-align: center;
+  pointer-events: none;
+  animation: vila-balao 3.2s ease-out forwards;
+}
+
+@keyframes vila-balao {
+  0% { opacity: 0; transform: translateY(-3px); }
+  6%, 85% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vila-muralha.nova,
+  .vila-obra.nova,
+  .vila-poeira,
+  .vila-andante,
+  .vila-andante-corpo,
+  .vila-pronta {
+    animation: none;
+  }
+  .vila-balao {
+    animation: none;
+  }
+}
+
+/* Combate com impacto: quem bate investe, quem apanha leva o tranco e pisca; golpe que derruba treme a tela. */
+.lutador.heroi .lutador-arte.bateu {
+  animation: investe-direita 0.22s ease-out;
+}
+
+.lutador.chefe .lutador-arte.bateu {
+  animation: investe-esquerda 0.22s ease-out;
+}
+
+@keyframes investe-direita {
+  40% { transform: translateX(14px); }
+}
+
+@keyframes investe-esquerda {
+  40% { transform: translateX(-14px); }
+}
+
+.lutador-arte.levou {
+  animation: tranco 0.25s ease-out;
+}
+
+@keyframes tranco {
+  0% { transform: translateX(0); filter: brightness(2.4); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); filter: brightness(1.4); }
+  75% { transform: translateX(-2px); }
+  100% { transform: translateX(0); filter: none; }
+}
+
+.lutador.caido .lutador-arte {
+  transform: rotate(90deg) translateX(6px);
+  transition: transform 0.35s ease-in;
+}
+
+.lutador.chefe.caido .lutador-arte {
+  transform: translateY(10px) scale(1, 0.7);
+}
+
+.combate.tremor {
+  animation: tremor 0.3s linear;
+}
+
+@keyframes tremor {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-4px, 2px); }
+  40% { transform: translate(4px, -2px); }
+  60% { transform: translate(-3px, -1px); }
+  80% { transform: translate(2px, 1px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lutador .lutador-arte.bateu,
+  .lutador-arte.levou,
+  .combate.tremor {
+    animation: none;
+  }
+  .lutador.caido .lutador-arte {
+    transition: none;
+  }
+}
+
+/* Botão de som na barra de recursos. */
+.botao-som {
+  width: 36px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--carvao);
+  border: 1px solid var(--aco);
+  border-radius: var(--raio);
+  cursor: pointer;
+  line-height: 0;
+}
+
+.botao-som[aria-checked='false'] {
+  opacity: 0.7;
+}

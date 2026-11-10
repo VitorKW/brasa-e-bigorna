@@ -95,6 +95,7 @@ export function RevelacaoItem() {
     if (batida === 'automatico' && (item.qualidade !== 'lendario' || agora - ultimaVez.current < 30_000)) return
     ultimaVez.current = agora
     setAtual(ultimoForjado)
+    useGame.getState().som('raro')
     // O timer fica num ref: a próxima peça forjada não pode cancelar o fechamento desta.
     if (timer.current !== null) window.clearTimeout(timer.current)
     timer.current = window.setTimeout(() => setAtual(null), 1800)

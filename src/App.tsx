@@ -18,6 +18,8 @@ import { VilarejoScreen } from './components/VilarejoScreen.tsx'
 import { useGame } from './store.ts'
 import { useGameLoop } from './useGameLoop.ts'
 import { registrarServiceWorker } from './pwa.ts'
+import { crepitar } from './audio.ts'
+import { analisarCadeia } from './game/chain.ts'
 
 export default function App() {
   useGameLoop()
@@ -34,6 +36,17 @@ export default function App() {
   const aba = useGame((s) => s.aba)
   const combate = useGame((s) => s.combate)
   const subForja = useGame((s) => s.subForja)
+  // Ambiente: o fogo estala baixinho enquanto a fornalha trabalha e a Forja está na tela.
+  const fogo = useGame((s) => s.jogo.som && s.aba === 'forja' && analisarCadeia(s.jogo).fornalha === 'trabalhando')
+  useEffect(() => {
+    const atualizar = () => crepitar(fogo && document.visibilityState === 'visible')
+    atualizar()
+    document.addEventListener('visibilitychange', atualizar)
+    return () => {
+      document.removeEventListener('visibilitychange', atualizar)
+      crepitar(false)
+    }
+  }, [fogo])
 
   return (
     <div className="app">

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useReducedMotion } from 'motion/react'
 import { analisarCadeia } from '../game/chain.ts'
 import { ferreiroEm } from '../game/ferreiros.ts'
@@ -7,6 +7,7 @@ import type { AlvoToque } from '../game/toque.ts'
 import { useGame } from '../store.ts'
 import { Sprite, type SpriteNome } from './Sprite.tsx'
 import { SpriteEstacao } from './SpritesEvolucao.tsx'
+import { useEscalaCena } from './useEscalaCena.ts'
 
 /** Tamanho nativo da cena (pixels da arte). O palco é escalado para caber na largura da tela. */
 const W = 176
@@ -55,21 +56,9 @@ export function CenaForja() {
   const convidar = useGame((s) => !s.jogo.dicasVistas.includes('cena'))
   const dispensarDica = useGame((s) => s.dispensarDica)
   const reduzir = useReducedMotion()
-  const caixa = useRef<HTMLDivElement>(null)
-  const [escala, setEscala] = useState(2)
+  const { caixa, escala } = useEscalaCena(W)
   const [efeitos, setEfeitos] = useState<Efeito[]>([])
   const [tocado, setTocado] = useState<{ alvo: AlvoToque; id: number; falhou: boolean } | null>(null)
-
-  // O palco tem 176×88 pixels de arte; a escala acompanha a largura disponível.
-  useLayoutEffect(() => {
-    const el = caixa.current
-    if (!el) return
-    const medir = () => setEscala(Math.max(1, el.clientWidth / W))
-    medir()
-    const ro = new ResizeObserver(medir)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   useEffect(() => {
     if (!tocado) return

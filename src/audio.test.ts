@@ -1,23 +1,38 @@
 import { describe, expect, it } from 'vitest'
-import { NOTAS, tocar, type SomId } from './audio.ts'
+import { SONS, crepitar, duracaoDe, tocar, type SomId } from './audio.ts'
 
-describe('som opcional', () => {
-  it('todo som é curto (menos de meio segundo), baixo e com frequências audíveis', () => {
-    for (const id of Object.keys(NOTAS) as SomId[]) {
-      const notas = NOTAS[id]
-      expect(notas.length).toBeGreaterThan(0)
-      const fim = Math.max(...notas.map((n) => n.t + n.d))
-      expect(fim, id).toBeLessThan(0.5)
-      for (const n of notas) {
-        expect(n.f).toBeGreaterThan(80)
-        expect(n.f).toBeLessThan(4000)
-        expect(n.v ?? 0.08).toBeLessThanOrEqual(0.2)
+const IDS = Object.keys(SONS) as SomId[]
+
+describe('som sintetizado', () => {
+  it('todo som é curto (menos de 0,9 s), baixo e com frequências audíveis', () => {
+    for (const id of IDS) {
+      const som = SONS[id]
+      expect(som.notas.length, id).toBeGreaterThan(0)
+      expect(duracaoDe(id), id).toBeLessThan(0.9)
+      for (const n of som.notas) {
+        for (const f of [n.f, n.ate ?? n.f]) {
+          expect(f, id).toBeGreaterThan(60)
+          expect(f, id).toBeLessThan(4000)
+        }
+        expect(n.v ?? 0.08, id).toBeLessThanOrEqual(0.2)
+        expect(n.d, id).toBeGreaterThan(0)
+      }
+      for (const r of som.ruidos ?? []) {
+        expect(r.v, id).toBeLessThanOrEqual(0.15)
+        expect(r.d, id).toBeLessThanOrEqual(0.25)
       }
     }
   })
 
-  it('sem Web Audio (Node, navegador antigo) tocar não lança erro', () => {
-    expect(() => tocar('moeda')).not.toThrow()
-    expect(() => tocar('conquista')).not.toThrow()
+  it('os sons de toque (que repetem muito) são os mais curtos', () => {
+    for (const id of ['picareta', 'carvao', 'martelo', 'negado', 'aba', 'golpe'] as const) {
+      expect(duracaoDe(id), id).toBeLessThanOrEqual(0.2)
+    }
+  })
+
+  it('sem Web Audio (Node, navegador antigo) nada lança erro', () => {
+    for (const id of IDS) expect(() => tocar(id)).not.toThrow()
+    expect(() => crepitar(true)).not.toThrow()
+    expect(() => crepitar(false)).not.toThrow()
   })
 })

@@ -26,7 +26,7 @@ function Lutador({
 }: {
   c: Combatente
   pv: number
-  ultimo: { alvo: string; dano: number } | null
+  ultimo: { ator: string; alvo: string; dano: number } | null
   idx: number
 }) {
   const caido = pv <= 0
@@ -34,9 +34,11 @@ function Lutador({
   const heroi = useGame((s) => s.jogo.herois.find((h) => `h${h.id}` === c.id))
   const pct = Math.max(0, Math.min(100, (pv / c.pvMax) * 100))
   const levou = ultimo?.alvo === c.id
+  const bateu = ultimo?.ator === c.id
   return (
     <div className={`lutador ${c.lado} ${caido ? 'caido' : ''}`}>
-      <div className="lutador-arte">
+      {/* A key troca a cada golpe: a investida de quem bate e o tranco de quem apanha recomeçam. */}
+      <div key={levou || bateu ? idx : 'parado'} className={`lutador-arte ${levou ? 'levou' : ''} ${bateu ? 'bateu' : ''}`}>
         {c.lado === 'chefe' ? (
           <Sprite nome={c.id === 'serpe' ? 'chefe_serpe' : 'chefe_golem'} escala={3} rotulo={c.nome} />
         ) : (
@@ -64,6 +66,7 @@ function Lutador({
 /** Replay do combate de chefe (~6 s): números de dano e barras de PV. Um toque pula. */
 export function CombateReplay({ combate }: { combate: CombateAtivo }) {
   const fechar = useGame((s) => s.fecharCombate)
+  const som = useGame((s) => s.som)
   const reduzir = useReducedMotion() ?? false
   const { resultado, recompensa, chefe } = combate
   const total = resultado.log.length
@@ -82,6 +85,18 @@ export function CombateReplay({ combate }: { combate: CombateAtivo }) {
   useEffect(() => {
     botao.current?.focus()
   }, [terminou])
+
+  // Som: um baque por golpe (mais forte no que derruba) e o desfecho no fim.
+  useEffect(() => {
+    if (reduzir && idx >= total) {
+      som(resultado.vitoria ? 'vitoria' : 'derrota')
+      return
+    }
+    if (idx === 0) return
+    if (idx >= total) som(resultado.vitoria ? 'vitoria' : 'derrota')
+    else som('golpe', resultado.log[idx - 1]?.derrubou ? 1.6 : 1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx])
 
   const pular = () => setIdx(total)
 
@@ -112,7 +127,7 @@ export function CombateReplay({ combate }: { combate: CombateAtivo }) {
 
   return (
     <div className="modal-fundo" onClick={() => !terminou && pular()}>
-      <div className="modal painel combate" role="dialog" aria-modal="true" aria-labelledby="titulo-combate">
+      <div className={`modal painel combate ${atual?.derrubou && !terminou ? 'tremor' : ''}`} role="dialog" aria-modal="true" aria-labelledby="titulo-combate">
         <h2 id="titulo-combate">{def.nome}</h2>
         <p className="combate-rodada">
           {terminou ? `Fim da luta · ${resultado.rodadas} ${resultado.rodadas === 1 ? 'rodada' : 'rodadas'}` : `Rodada ${atual?.rodada ?? 1}`}

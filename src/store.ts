@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { OFFLINE, type EstacaoId, type RecursoId } from './game/constants.ts'
+import { NIVEIS_MARCO, OFFLINE, type EstacaoId, type RecursoId } from './game/constants.ts'
 import {
   alternarAutomatico,
   forjar as forjarRegra,
@@ -136,6 +136,8 @@ interface Store {
   entregarEncomenda: (id: number) => void
   alternarAutoVenda: () => void
   alternarSom: () => void
+  /** Toca um efeito se o som estiver ligado (para a UI: replay do combate, revelação de peça rara). */
+  som: (id: SomId, volume?: number) => void
   dispensarDica: (id: string) => void
   fecharAvisoConquistas: () => void
 }
@@ -167,6 +169,7 @@ const somAtivo = (jogo: GameState, id: SomId): void => {
 }
 
 const ultimoToque: Partial<Record<AlvoToque, number>> = {}
+const SOM_DO_TOQUE: Record<AlvoToque, SomId> = { mina: 'picareta', carvoaria: 'carvao', fornalha: 'fole', bigorna: 'martelo' }
 let contadorGanho = 0
 let contadorForjado = 0
 let contadorBatida = 0
@@ -187,8 +190,14 @@ export const useGame = create<Store>((set, get) => ({
   ultimoReforjar: null,
   ultimaEntrega: null,
 
-  irPara: (aba) => set({ aba, ultimoReforjar: null }),
-  irParaForja: (sub) => set({ aba: 'forja', subForja: sub, ultimoReforjar: null }),
+  irPara: (aba) => {
+    if (aba !== get().aba) somAtivo(get().jogo, 'aba')
+    set({ aba, ultimoReforjar: null })
+  },
+  irParaForja: (sub) => {
+    if (get().aba !== 'forja' || sub !== get().subForja) somAtivo(get().jogo, 'aba')
+    set({ aba: 'forja', subForja: sub, ultimoReforjar: null })
+  },
 
   tocarCena: (alvo) => {
     // Intervalo mínimo por estação: segura auto-clicker e multitoque sem punir o dedo rápido.
@@ -197,6 +206,7 @@ export const useGame = create<Store>((set, get) => ({
     ultimoToque[alvo] = agora
     const r = tocarRegra(get().jogo, alvo)
     if (r.ganho > 0) set({ jogo: r.estado })
+    somAtivo(r.estado, r.ganho > 0 ? SOM_DO_TOQUE[alvo] : 'negado')
     return r.ganho
   },
 
@@ -237,7 +247,11 @@ export const useGame = create<Store>((set, get) => ({
   melhorar: (estacao) => {
     const { jogo } = get()
     const novo = comprarUpgrade(jogo, estacao)
-    if (novo !== jogo) set({ jogo: novo })
+    if (novo === jogo) return
+    set({ jogo: novo })
+    // Construir (nível 0 -> 1) soa como obra; marco de nível (produção x2 e arte nova) ganha fanfarra.
+    const nivel = novo.niveis[estacao]
+    somAtivo(novo, nivel === 1 && jogo.niveis[estacao] === 0 ? 'construir' : (NIVEIS_MARCO as readonly number[]).includes(nivel) ? 'marco' : 'melhorar')
   },
 
   vender: (recurso) => {
@@ -260,6 +274,7 @@ export const useGame = create<Store>((set, get) => ({
     const novo = forjarRegra(jogo, receita, comBatida, material)
     if (novo === jogo) return
     set({ jogo: novo, batidaAtiva: comBatida && novo.forja?.minigame === 'pendente' ? ++contadorBatida : null })
+    somAtivo(novo, 'martelo')
   },
 
   removerDaFila: (indice) => set({ jogo: removerDaFilaRegra(get().jogo, indice) }),
@@ -279,7 +294,9 @@ export const useGame = create<Store>((set, get) => ({
   contratar: (id) => {
     const { jogo } = get()
     const novo = contratarRegra(jogo, id)
-    if (novo !== jogo) set({ jogo: novo })
+    if (novo === jogo) return
+    set({ jogo: novo })
+    somAtivo(novo, 'entrega')
   },
 
   alocar: (id, estacao) => {
@@ -324,13 +341,17 @@ export const useGame = create<Store>((set, get) => ({
   recrutar: (classe) => {
     const { jogo } = get()
     const novo = recrutarRegra(jogo, classe)
-    if (novo !== jogo) set({ jogo: novo })
+    if (novo === jogo) return
+    set({ jogo: novo })
+    somAtivo(novo, 'entrega')
   },
 
   equipar: (heroiId, itemId) => {
     const { jogo } = get()
     const novo = equiparRegra(jogo, heroiId, itemId)
-    if (novo !== jogo) set({ jogo: novo })
+    if (novo === jogo) return
+    set({ jogo: novo })
+    somAtivo(novo, 'equipar')
   },
 
   desequipar: (heroiId, slot) => {
@@ -343,19 +364,25 @@ export const useGame = create<Store>((set, get) => ({
   enviarExpedicao: (heroiId, tipo) => {
     const { jogo } = get()
     const novo = partir(jogo, heroiId, tipo, Date.now())
-    if (novo !== jogo) set({ jogo: novo })
+    if (novo === jogo) return
+    set({ jogo: novo })
+    somAtivo(novo, 'partir')
   },
 
   coletarExpedicao: (id) => {
     const { jogo } = get()
     const r = coletarRegra(jogo, id, Date.now())
-    if (r.estado !== jogo) set({ jogo: r.estado, ultimaColeta: { id: ++contadorColeta, coleta: r.coleta } })
+    if (r.estado === jogo) return
+    set({ jogo: r.estado, ultimaColeta: { id: ++contadorColeta, coleta: r.coleta } })
+    somAtivo(r.estado, 'moeda')
   },
 
   coletarTodas: () => {
     const { jogo } = get()
     const r = coletarTodasRegra(jogo, Date.now())
-    if (r.estado !== jogo) set({ jogo: r.estado, ultimaColeta: { id: ++contadorColeta, coleta: r.coleta } })
+    if (r.estado === jogo) return
+    set({ jogo: r.estado, ultimaColeta: { id: ++contadorColeta, coleta: r.coleta } })
+    somAtivo(r.estado, 'moeda')
   },
 
   lutar: (chefe, heroiIds) => {
@@ -373,13 +400,17 @@ export const useGame = create<Store>((set, get) => ({
   construir: (id) => {
     const { jogo } = get()
     const novo = construirRegra(jogo, id)
-    if (novo !== jogo) set({ jogo: novo })
+    if (novo === jogo) return
+    set({ jogo: novo })
+    somAtivo(novo, 'construir')
   },
 
   comprarTalento: (id) => {
     const { jogo } = get()
     const novo = comprarTalentoRegra(jogo, id)
-    if (novo !== jogo) set({ jogo: novo })
+    if (novo === jogo) return
+    set({ jogo: novo })
+    somAtivo(novo, 'raro')
   },
 
   // Reforjar é a ação mais forte do jogo: a UI só chama depois da confirmação (segurar o botão).
@@ -391,6 +422,7 @@ export const useGame = create<Store>((set, get) => ({
     if (novo === jogo) return
     set({ jogo: novo, ultimoReforjar: { id: ++contadorReforjar, brasas }, batidaAtiva: null, combate: null })
     gravarSave(novo)
+    somAtivo(novo, 'vitoria')
   },
 
   // O relógio da entrega é o mesmo que decide o prazo (Date.now), não o lastTick.
@@ -408,10 +440,14 @@ export const useGame = create<Store>((set, get) => ({
 
   alternarAutoVenda: () => set({ jogo: { ...get().jogo, autoVenda: !get().jogo.autoVenda } }),
 
+  som: (id, volume) => {
+    if (get().jogo.som) tocar(id, volume)
+  },
+
   alternarSom: () => {
     const novo = { ...get().jogo, som: !get().jogo.som }
     set({ jogo: novo })
-    somAtivo(novo, 'moeda') // confirma que ligou (o toque também destrava o áudio no celular)
+    somAtivo(novo, 'marco') // confirma que ligou (o toque também destrava o áudio no celular)
   },
 
   dispensarDica: (id) => {

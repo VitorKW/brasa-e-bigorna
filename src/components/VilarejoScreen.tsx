@@ -8,6 +8,7 @@ import {
 } from '../game/construcoes.ts'
 import { formatar, formatarCusto } from '../game/format.ts'
 import { useGame } from '../store.ts'
+import { CenaVilarejo } from './CenaVilarejo.tsx'
 import { EncomendasPanel } from './EncomendasPanel.tsx'
 import { Sprite } from './Sprite.tsx'
 
@@ -23,7 +24,7 @@ function CartaoConstrucao({ id }: { id: ConstrucaoId }) {
   const chefeOk = def.exige === null || chefeDerrotado(jogo, def.exige)
 
   return (
-    <li className={`construcao painel ${feita ? 'feita' : ''} ${!feita && !reputacaoOk ? 'fechada' : ''}`} aria-label={def.nome}>
+    <li id={`obra-${id}`} className={`construcao painel ${feita ? 'feita' : ''} ${!feita && !reputacaoOk ? 'fechada' : ''}`} aria-label={def.nome}>
       <div className="construcao-topo">
         <Sprite nome={`construcao_${id}`} escala={2} rotulo={def.nome} />
         <div className="construcao-texto">
@@ -84,6 +85,7 @@ export function VilarejoScreen() {
 
   return (
     <>
+      <CenaVilarejo />
       <EncomendasPanel />
 
       <section className="secao painel" aria-label="Construções">

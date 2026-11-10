@@ -93,12 +93,14 @@ describe('store: conquistas e opções', () => {
 
   it('venda automática, som e dicas', () => {
     expect(useGame.getState().jogo.autoVenda).toBe(false)
-    expect(useGame.getState().jogo.som).toBe(false)
+    expect(useGame.getState().jogo.som).toBe(true) // jogo novo começa com som
     useGame.getState().alternarAutoVenda()
     expect(useGame.getState().jogo.autoVenda).toBe(true)
     useGame.getState().alternarAutoVenda()
     expect(useGame.getState().jogo.autoVenda).toBe(false)
-    useGame.getState().alternarSom() // sem Web Audio no Node: só liga a opção, sem erro
+    useGame.getState().alternarSom() // sem Web Audio no Node: só troca a opção, sem erro
+    expect(useGame.getState().jogo.som).toBe(false)
+    useGame.getState().alternarSom()
     expect(useGame.getState().jogo.som).toBe(true)
     useGame.getState().dispensarDica('melhorar')
     useGame.getState().dispensarDica('melhorar')
