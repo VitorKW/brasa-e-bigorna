@@ -1,5 +1,7 @@
 # Brasa & Bigorna
 
+**[▶ Jogar no navegador](https://vitorkw.github.io/brasa-e-bigorna/)**: melhor no celular; dá para instalar como app pelo menu do navegador.
+
 Um jogo idle + tycoon + RPG para o celular, feito como PWA. Você herda uma forja abandonada num vilarejo de fronteira: ela trabalha
 sozinha enquanto você decide o que melhorar, o que forjar e quem equipar. Os heróis que usam suas armas derrubam os chefes da região
 e, quando o vilarejo vira cidade, você reforja tudo e recomeça mais forte.
