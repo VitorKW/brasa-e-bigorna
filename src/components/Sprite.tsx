@@ -43,6 +43,7 @@ export type SpriteNome =
   | 'lote'
   | 'icone_som'
   | 'icone_mudo'
+  | 'icone_cronica'
   | CamadaEstacao
   | CamadaHeroi
 
@@ -173,6 +174,7 @@ const SPRITES: Record<SpriteNome, Def> = {
   lote: { w: 32, h: 32, cor: '#4a2f22', texto: '#f3e9dc', inicial: '' },
   icone_som: { w: 16, h: 16, cor: '#5b5662', texto: '#f3e9dc', inicial: '♪' },
   icone_mudo: { w: 16, h: 16, cor: '#3a353d', texto: '#f3e9dc', inicial: '×' },
+  icone_cronica: { w: 16, h: 16, cor: '#6e2626', texto: '#f3e9dc', inicial: 'C' },
 }
 
 const urlDe = (nome: SpriteNome) => `${import.meta.env.BASE_URL}sprites/${nome}.png`

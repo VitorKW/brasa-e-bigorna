@@ -14,7 +14,9 @@ export function ToastConquista() {
   const fila = useGame((s) => s.avisoConquistas)
   const fechar = useGame((s) => s.fecharAvisoConquistas)
   const reduzir = useReducedMotion()
-  const primeira = fila[0]
+  // Com a Crônica aberta o aviso espera: ele taparia o título da história.
+  const ocupado = useGame((s) => s.cronicaAberta)
+  const primeira = ocupado ? undefined : fila[0]
 
   useEffect(() => {
     if (!primeira) return

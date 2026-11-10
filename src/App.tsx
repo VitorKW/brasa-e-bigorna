@@ -3,6 +3,7 @@ import { AnimatePresence } from 'motion/react'
 import { AvisoAtualizacao } from './components/AvisoAtualizacao.tsx'
 import { BatidaModal } from './components/BatidaModal.tsx'
 import { CombateReplay } from './components/CombateReplay.tsx'
+import { CronicaSheet } from './components/CronicaSheet.tsx'
 import { ForgeScreen } from './components/ForgeScreen.tsx'
 import { GuildaScreen } from './components/GuildaScreen.tsx'
 import { MapaScreen } from './components/MapaScreen.tsx'
@@ -36,6 +37,12 @@ export default function App() {
   const aba = useGame((s) => s.aba)
   const combate = useGame((s) => s.combate)
   const subForja = useGame((s) => s.subForja)
+  const cronicaAberta = useGame((s) => s.cronicaAberta)
+  // Jogo novo: a Crônica abre uma vez, com a abertura do capítulo 1 (a história antes dos números).
+  const mostrarIntro = useGame((s) => !s.jogo.campanha.introVista)
+  useEffect(() => {
+    if (mostrarIntro) useGame.setState({ cronicaAberta: true })
+  }, [mostrarIntro])
   // Ambiente: o fogo estala baixinho enquanto a fornalha trabalha e a Forja está na tela.
   const fogo = useGame((s) => s.jogo.som && s.aba === 'forja' && analisarCadeia(s.jogo).fornalha === 'trabalhando')
   useEffect(() => {
@@ -67,6 +74,7 @@ export default function App() {
       <RevelacaoItem />
       <BatidaModal />
       {combate && <CombateReplay key={combate.id} combate={combate} />}
+      {cronicaAberta && !combate && <CronicaSheet />}
       <AnimatePresence>
         {resumo && <OfflineModal resumo={resumo} onFechar={fecharResumo} />}
       </AnimatePresence>

@@ -7,6 +7,7 @@ import {
   removerDaFila as removerDaFilaRegra,
   type Forjado,
 } from './game/bigorna.ts'
+import { aplicarCampanha, receberRecompensa as receberRecompensaRegra } from './game/campanha.ts'
 import { aplicarConquistas, type ConquistaId } from './game/conquistas.ts'
 import { construir as construirRegra, type ConstrucaoId } from './game/construcoes.ts'
 import { avancarEncomendas, entregar as entregarRegra, type Entrega } from './game/encomendas.ts'
@@ -81,6 +82,10 @@ export interface CombateAtivo {
 interface Store {
   aba: AbaId
   subForja: SubForja
+  /** A tela da Crônica (campanha) está aberta? Só UI. */
+  cronicaAberta: boolean
+  abrirCronica: () => void
+  fecharCronica: () => void
   jogo: GameState
   resumoOffline: ResumoOffline | null
   /** Último ganho de venda, para a UI mostrar o "+N" (id muda a cada venda). */
@@ -140,11 +145,16 @@ interface Store {
   som: (id: SomId, volume?: number) => void
   dispensarDica: (id: string) => void
   fecharAvisoConquistas: () => void
+  /** Recebe a recompensa do capítulo atual da campanha, se ele estiver completo. */
+  receberRecompensa: () => void
+  /** A abertura do capítulo 1 já foi mostrada (não abre sozinha de novo). */
+  marcarIntroCampanha: () => void
 }
 
 /** Depois de cada passo do jogo: encomendas que vencem ou surgem e conquistas que passaram a valer. */
 function aposPasso(jogo: GameState, agora: number): { jogo: GameState; novas: ConquistaId[] } {
-  const r = aplicarConquistas(avancarEncomendas(jogo, agora))
+  // Missões da campanha são gravadas aqui (como as conquistas): o que o estado já cumpre fica para sempre.
+  const r = aplicarConquistas(aplicarCampanha(avancarEncomendas(jogo, agora)).estado)
   return { jogo: r.estado, novas: r.novas }
 }
 
@@ -181,6 +191,15 @@ let contadorEntrega = 0
 export const useGame = create<Store>((set, get) => ({
   aba: 'forja',
   subForja: 'producao',
+  cronicaAberta: false,
+  abrirCronica: () => {
+    somAtivo(get().jogo, 'aba')
+    set({ cronicaAberta: true })
+  },
+  fecharCronica: () => {
+    get().marcarIntroCampanha()
+    set({ cronicaAberta: false })
+  },
   ...iniciar(),
   ultimoGanho: null,
   ultimoForjado: null,
@@ -457,4 +476,20 @@ export const useGame = create<Store>((set, get) => ({
   },
 
   fecharAvisoConquistas: () => set({ avisoConquistas: [] }),
+
+  receberRecompensa: () => {
+    const { jogo } = get()
+    const novo = receberRecompensaRegra(jogo)
+    if (novo === jogo) return
+    const ganhoMoedas = novo.moedas - jogo.moedas
+    set({ jogo: novo, ...(ganhoMoedas > 0 ? { ultimoGanho: { id: ++contadorGanho, valor: ganhoMoedas } } : {}) })
+    gravarSave(novo)
+    somAtivo(novo, 'vitoria')
+  },
+
+  marcarIntroCampanha: () => {
+    const { jogo } = get()
+    if (jogo.campanha.introVista) return
+    set({ jogo: { ...jogo, campanha: { ...jogo.campanha, introVista: true } } })
+  },
 }))

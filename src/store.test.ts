@@ -134,3 +134,30 @@ describe('store: backup do save', () => {
     expect(useGame.getState().jogo.moedas).toBe(77)
   })
 })
+
+describe('store: campanha', () => {
+  beforeEach(() => comecar())
+
+  it('o tick grava as missões cumpridas e receber a recompensa paga e avança', () => {
+    comecar({ niveis: { mina: 5, carvoaria: 3, fornalha: 3, bigorna: 1, forno: 0 } })
+    const s0 = useGame.getState().jogo
+    useGame.setState({ jogo: { ...s0, stats: { ...s0.stats, itensForjados: 5 } } })
+    useGame.getState().avancar(Date.now() + 200)
+    expect(useGame.getState().jogo.campanha.feitas).toEqual(expect.arrayContaining(['c1_mina', 'c1_bigorna', 'c1_peca', 'c1_cinco']))
+    const antes = useGame.getState().jogo.moedas
+    useGame.getState().receberRecompensa()
+    expect(useGame.getState().jogo.moedas).toBeCloseTo(antes + 500, 0)
+    expect(useGame.getState().jogo.campanha.recompensas).toEqual([1])
+    useGame.getState().receberRecompensa() // capítulo 2 incompleto: nada acontece
+    expect(useGame.getState().jogo.campanha.recompensas).toEqual([1])
+  })
+
+  it('fechar a Crônica marca a abertura como vista', () => {
+    expect(useGame.getState().jogo.campanha.introVista).toBe(false)
+    useGame.getState().abrirCronica()
+    expect(useGame.getState().cronicaAberta).toBe(true)
+    useGame.getState().fecharCronica()
+    expect(useGame.getState().cronicaAberta).toBe(false)
+    expect(useGame.getState().jogo.campanha.introVista).toBe(true)
+  })
+})

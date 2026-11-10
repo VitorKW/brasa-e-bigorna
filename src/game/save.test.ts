@@ -312,7 +312,7 @@ describe('save v5 (fatia 5)', () => {
   it('MIGRACOES[4] acrescenta encomendas, conquistas, estatísticas e opções sem mexer no resto', () => {
     const s = desserializar(JSON.stringify(v4()))
     expect(s).not.toBeNull()
-    expect(s!.version).toBe(5)
+    expect(s!.version).toBe(SAVE_VERSION)
     expect(s!.encomendas).toEqual([])
     expect(s!.proximoIdEncomenda).toBe(1)
     expect(s!.proximaEncomenda).toBe(0)
@@ -344,7 +344,7 @@ describe('save v5 (fatia 5)', () => {
   it('cadeia completa: um save v1 chega à v5 com tudo no lugar', () => {
     const v1 = { version: 1, lastTick: 5, niveis: { mina: 3, carvoaria: 2, fornalha: 2 }, recursos: { minerio: 1, carvao: 1, lingote: 1, aco: 0 }, moedas: 5, moedasGanhas: 5 }
     const s = desserializar(JSON.stringify(v1))
-    expect(s?.version).toBe(5)
+    expect(s?.version).toBe(SAVE_VERSION)
     expect(s?.encomendas).toEqual([])
     expect(s?.stats.sessoes).toBe(1)
   })
@@ -393,5 +393,38 @@ describe('save v5 (fatia 5)', () => {
     expect(desserializar(JSON.stringify(semStats))).toBeNull()
     expect(desserializar(JSON.stringify({ ...ok, stats: { ...ok.stats, sessoes: -1 } }))).toBeNull()
     expect(desserializar(JSON.stringify({ ...ok, autoVenda: 'sim' }))).toBeNull()
+  })
+})
+
+describe('save v6 (campanha)', () => {
+  const semCampanha = (s: GameState): Record<string, unknown> => {
+    const { campanha, ...resto } = s
+    void campanha
+    return { ...resto, version: 5 }
+  }
+
+  it('um save v5 ganha a campanha vazia, sem a abertura pular na tela, e nada mais muda', () => {
+    const antigo = { ...estadoInicial(7, 3), moedas: 4321, reputacao: 80 }
+    const s = desserializar(JSON.stringify(semCampanha(antigo)))!
+    expect(s.version).toBe(SAVE_VERSION)
+    expect(s.campanha).toEqual({ feitas: [], recompensas: [], introVista: true })
+    expect(s.moedas).toBe(4321)
+    expect(s.reputacao).toBe(80)
+  })
+
+  it('jogo novo começa com a abertura por mostrar e sobrevive a salvar e ler', () => {
+    const novo = estadoInicial(1, 2)
+    expect(novo.campanha.introVista).toBe(false)
+    expect(desserializar(serializar(novo))!.campanha).toEqual(novo.campanha)
+  })
+
+  it('missão desconhecida é descartada; recompensa só vale em sequência; campo faltando rejeita', () => {
+    const base = estadoInicial(9, 3)
+    const lido = desserializar(
+      JSON.stringify({ ...base, campanha: { feitas: ['c1_mina', 'c1_mina', 'inventada'], recompensas: [1, 3], introVista: 'sim' } }),
+    )!
+    expect(lido.campanha).toEqual({ feitas: ['c1_mina'], recompensas: [1], introVista: false })
+    expect(desserializar(JSON.stringify({ ...base, campanha: { feitas: [] } }))).toBeNull()
+    expect(desserializar(JSON.stringify(semCampanha(base)).replace('"version":5', '"version":6'))).toBeNull()
   })
 })

@@ -3337,3 +3337,290 @@ p {
 .botao-som[aria-checked='false'] {
   opacity: 0.7;
 }
+
+/* ---------- Fatia 9: campanha ---------- */
+/* A faixa agora é uma caixa com dois botões: o objetivo (grande) e o livro da Crônica. */
+.objetivo {
+  padding: 0;
+  grid-template-columns: 1fr auto;
+  gap: 0;
+  align-items: stretch;
+  cursor: default;
+}
+
+.objetivo-principal {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 10px;
+  min-width: 0;
+  padding: 8px 8px 10px 12px;
+  background: none;
+  border: 0;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.objetivo.aqui .objetivo-principal {
+  cursor: default;
+}
+
+.objetivo-rotulo {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.objetivo-cronica {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 52px;
+  padding: 4px 8px 6px;
+  background: rgba(27, 22, 24, 0.5);
+  border: 0;
+  border-left: 1px solid var(--aco);
+  color: var(--texto);
+  cursor: pointer;
+  line-height: 0;
+}
+
+.objetivo-contagem {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.objetivo.pronto {
+  border-color: var(--amarelo);
+  animation: objetivo-chama 1.4s ease-in-out infinite;
+}
+
+.objetivo.pronto .objetivo-texto {
+  color: var(--amarelo);
+  font-weight: 600;
+}
+
+@keyframes objetivo-chama {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 212, 122, 0.5), 0 2px 0 rgba(0, 0, 0, 0.4); }
+  50% { box-shadow: 0 0 0 5px rgba(255, 212, 122, 0), 0 2px 0 rgba(0, 0, 0, 0.4); }
+}
+
+.objetivo-cumprida {
+  grid-column: 1 / -1;
+  color: #8fd18a;
+  font-weight: 600;
+  animation: objetivo-cumprida 0.4s ease-out;
+}
+
+@keyframes objetivo-cumprida {
+  0% { transform: translateY(6px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Tela da Crônica. */
+.cronica h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cronica-atual {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--carvao);
+  border: 1px solid var(--laranja);
+  border-radius: var(--raio);
+}
+
+.cronica-atual h3 {
+  margin: 0;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.cronica-numero,
+.cronica-selo {
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--laranja);
+}
+
+.cronica-atual.concluido {
+  border-color: var(--amarelo);
+  animation: cronica-conclui 0.5s ease-out;
+}
+
+.cronica-selo {
+  align-self: flex-start;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--amarelo);
+  color: var(--carvao);
+}
+
+@keyframes cronica-conclui {
+  0% { transform: scale(0.94); box-shadow: 0 0 0 0 rgba(255, 212, 122, 0.8); }
+  100% { transform: scale(1); box-shadow: 0 0 0 14px rgba(255, 212, 122, 0); }
+}
+
+.cronica-fala {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.cronica-fala-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cronica-quem {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.cronica-quem small {
+  font-weight: 500;
+  color: var(--texto-suave);
+}
+
+.cronica-fala p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.35;
+  font-style: italic;
+  color: var(--texto);
+}
+
+.cronica-missoes,
+.cronica-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cronica-missoes li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+  font-size: 16px;
+}
+
+.cronica-missoes li.feita {
+  color: var(--texto-suave);
+  text-decoration: line-through;
+}
+
+/* Caixa de marcar desenhada em CSS: vazia ou com o "v" de feito. */
+.cronica-marca {
+  position: relative;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--aco);
+  border-radius: 4px;
+  background: var(--aco-escuro);
+}
+
+.cronica-marca.feita {
+  border-color: #8fd18a;
+  background: #8fd18a;
+}
+
+.cronica-marca.feita::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 0;
+  width: 5px;
+  height: 10px;
+  border: solid var(--carvao);
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}
+
+.cronica-recompensa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 16px;
+}
+
+.cronica-recompensa strong {
+  color: var(--amarelo);
+}
+
+.cronica-linha {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: var(--alvo-toque);
+  padding: 6px 10px;
+  background: var(--carvao);
+  border: 1px solid var(--aco-desligado);
+  border-radius: var(--raio);
+  color: var(--texto);
+  font: inherit;
+  font-size: 16px;
+  text-align: left;
+}
+
+button.cronica-linha {
+  cursor: pointer;
+}
+
+.cronica-linha small {
+  color: var(--texto-suave);
+  font-size: 14px;
+}
+
+.cronica-linha.futura {
+  min-height: 0;
+  color: var(--texto-suave);
+}
+
+.cronica-feito {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .objetivo.pronto,
+  .objetivo-cumprida,
+  .cronica-atual.concluido {
+    animation: none;
+  }
+}
+
+/* O título do capítulo não quebra linha; sem o minmax(0, …) ele alargava a coluna e cortava o texto do objetivo. */
+.objetivo {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.objetivo-principal {
+  grid-template-columns: minmax(0, 1fr) auto;
+}

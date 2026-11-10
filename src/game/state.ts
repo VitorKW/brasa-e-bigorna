@@ -6,6 +6,7 @@ import type { Expedicao } from './expedicoes.ts'
 import type { Heroi } from './herois.ts'
 import { FERREIROS, type Ferreiro, type FerreiroId } from './ferreiros.ts'
 import type { Item, MaterialId, ReceitaId, ResultadoBatida } from './items.ts'
+import { campanhaInicial, type EstadoCampanha } from './campanha.ts'
 import type { ConquistaId } from './conquistas.ts'
 import type { Encomenda } from './encomendas.ts'
 import { estatisticasIniciais, type Estatisticas } from './estatisticas.ts'
@@ -95,6 +96,8 @@ export interface GameState {
   som: boolean
   /** Dicas de primeira vez já dispensadas. */
   dicasVistas: string[]
+  /** Campanha (fatia 9): missões cumpridas e recompensas recebidas. Sobrevive ao Reforjar. */
+  campanha: EstadoCampanha
 }
 
 export const LIMITE_INVENTARIO_PADRAO = 30 // [suposição]
@@ -142,5 +145,6 @@ export function estadoInicial(now: number, rng = 20261109): GameState {
     stats: estatisticasIniciais(),
     som: true, // ligado em jogo novo; o botão de som fica na barra de recursos
     dicasVistas: [],
+    campanha: campanhaInicial(),
   }
 }

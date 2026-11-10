@@ -145,6 +145,16 @@ em vez de teto diário, porque um teto diário exigiria um relógio de dia, que 
   de recursos.
 - *Combate.* Quem bate investe, quem apanha leva o tranco e pisca, o golpe que derruba treme a tela, e o chefe desaba.
 
+**Fatia 9: campanha.**
+- *Sete capítulos.* `campanha.ts` define a história do vilarejo: cada capítulo tem um morador que o abre e o fecha, até 4 missões e uma
+  recompensa (moedas, um item ou Brasas). As missões são funções puras do estado, conferidas depois de cada tick como as conquistas, e
+  ficam gravadas: o Reforjar zera níveis e itens, não a história. Todas contam desde o início; o que anda em ordem é o capítulo atual.
+- *Save v6.* A migração dá a quem já joga a campanha vazia sem a abertura pular na tela; o primeiro tick reconhece o que já foi feito e
+  as recompensas ficam esperando na Crônica. A validação descarta missão desconhecida e só aceita recompensas em sequência.
+- *Na tela.* A faixa do topo mostra o capítulo e a contagem de missões, avisa "Missão cumprida" e chama para a Crônica quando há
+  recompensa; jogo novo abre com a fala da Quitéria. Um teste roda o simulador por 36 h e confere que toda missão dos capítulos 1 a 6
+  é alcançável, para a campanha nunca travar por uma mudança de balanceamento.
+
 **Sim guloso de balanceamento.** `simular(horas, passo, opções)` joga o jogo com uma estratégia simples (compra a opção de melhor retorno por
 moeda, aloca ferreiros por força bruta, entrega encomendas, equipa o melhor kit, luta quando a previsão dá vitória) e mede os marcos. Com
 um padrão de jogador por dias (2 h sem parar no começo de cada ciclo, depois 5 min de sessão a cada 90 min, 8 h de sono, o resto offline

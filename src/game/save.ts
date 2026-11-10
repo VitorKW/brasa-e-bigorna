@@ -1,4 +1,5 @@
 import { ESTACOES, ESTACOES_PRODUCAO, RECURSOS, SAVE_VERSION, type EstacaoId } from './constants.ts'
+import { CAPITULOS, TODAS_MISSOES } from './campanha.ts'
 import { CHEFES, type ChefeId } from './chefe.ts'
 import { CONQUISTAS, type ConquistaId } from './conquistas.ts'
 import { CONSTRUCOES, type ConstrucaoId } from './construcoes.ts'
@@ -99,6 +100,12 @@ export const MIGRACOES: Migracoes = {
       dicasVistas: [],
     }
   },
+  /**
+   * Fatia 8 -> fatia 9: a campanha. Quem já joga não vê a abertura do capítulo 1 pular na tela
+   * (introVista), e as missões que o estado já cumpre são gravadas sozinhas no primeiro tick; as
+   * recompensas dos capítulos prontos ficam esperando na Crônica.
+   */
+  5: (raw) => ({ ...raw, version: 6, campanha: { feitas: [], recompensas: [], introVista: true } }),
 }
 
 const ehNumero = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x)
@@ -324,6 +331,15 @@ export function validarEstado(raw: unknown): GameState | null {
   if (!ehNumero(raw.proximoIdEncomenda) || !ehNumero(raw.proximaEncomenda)) return null
   if (typeof raw.autoVenda !== 'boolean' || typeof raw.som !== 'boolean') return null
   if (!Array.isArray(raw.conquistas) || !Array.isArray(raw.dicasVistas)) return null
+  const camp = raw.campanha
+  if (!ehObjeto(camp) || !Array.isArray(camp.feitas) || !Array.isArray(camp.recompensas)) return null
+  // Só ids conhecidos, sem repetir; recompensa só vale em sequência (1, 2, 3...), como o jogo as entrega.
+  const feitasCamp = TODAS_MISSOES.filter((id) => (camp.feitas as unknown[]).includes(id))
+  const recompensasCamp: number[] = []
+  for (const c of CAPITULOS) {
+    if (!(camp.recompensas as unknown[]).includes(c.numero)) break
+    recompensasCamp.push(c.numero)
+  }
   const conquistas = CONQUISTAS.filter((c) => (raw.conquistas as unknown[]).includes(c)) as ConquistaId[]
   const dicasVistas = [...new Set((raw.dicasVistas as unknown[]).filter((d): d is string => typeof d === 'string'))].slice(0, 50)
 
@@ -363,6 +379,7 @@ export function validarEstado(raw: unknown): GameState | null {
     stats,
     som: raw.som,
     dicasVistas,
+    campanha: { feitas: feitasCamp, recompensas: recompensasCamp, introVista: camp.introVista === true },
   }
 }
 

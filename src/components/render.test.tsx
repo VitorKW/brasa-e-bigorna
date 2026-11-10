@@ -18,6 +18,8 @@ import { ReforjarScreen } from './ReforjarScreen.tsx'
 import { VilarejoScreen } from './VilarejoScreen.tsx'
 import { AvisoAtualizacao } from './AvisoAtualizacao.tsx'
 import { ConquistasSheet } from './ConquistasSheet.tsx'
+import { CronicaSheet } from './CronicaSheet.tsx'
+import { ObjetivoBanner } from './ObjetivoBanner.tsx'
 import { EncomendasPanel } from './EncomendasPanel.tsx'
 import { ItensPanel } from './ItensPanel.tsx'
 import { OfflineModal } from './OfflineModal.tsx'
@@ -541,5 +543,46 @@ describe('botão de som', () => {
     expect(html(<ResourceBar />)).toMatch(/role="switch" aria-checked="true" aria-label="Som"/)
     comEstado({ ...estadoInicial(0), som: false })
     expect(html(<ResourceBar />)).toMatch(/role="switch" aria-checked="false" aria-label="Som"/)
+  })
+})
+
+describe('campanha', () => {
+  const comCampanha = (s: GameState, feitas: string[], recompensas: number[] = []): GameState => ({
+    ...s,
+    campanha: { feitas, recompensas, introVista: true },
+  })
+
+  it('a faixa mostra o capítulo, a contagem de missões e o objetivo de agora', () => {
+    comEstado(comCampanha(estadoInicial(0, 1), ['c1_mina']), { aba: 'forja', subForja: 'producao' })
+    const saida = html(<ObjetivoBanner />)
+    expect(saida).toContain('Capítulo 1 · A forja herdada')
+    expect(saida).toContain('1 de 4 missões do capítulo')
+    expect(saida).toContain('Venda minério e melhore a mina')
+  })
+
+  it('com o capítulo completo a faixa chama para receber a recompensa', () => {
+    comEstado(comCampanha(estadoInicial(0, 1), ['c1_mina', 'c1_bigorna', 'c1_peca', 'c1_cinco']))
+    const saida = html(<ObjetivoBanner />)
+    expect(saida).toContain('Capítulo concluído! Receba a recompensa.')
+    expect(saida).toContain('objetivo painel pronto')
+  })
+
+  it('a Crônica mostra quem conta, as missões marcadas, a recompensa e os outros capítulos', () => {
+    comEstado(comCampanha(meioDeJogo(), ['c1_mina', 'c1_bigorna', 'c1_peca', 'c1_cinco', 'c2_heroi'], [1]))
+    const saida = html(<CronicaSheet />)
+    for (const t of ['Crônica da forja', 'Capítulo 2 de 7', 'O primeiro herói', 'Sargento Amaro', 'Contrate um herói na Guilda: cumprida', 'Junte 20 de reputação: por fazer', 'Escudo raro de ferro', 'Capítulo 1 · A forja herdada', 'Capítulo 7 · Epílogo']) {
+      expect(saida, t).toContain(t)
+    }
+    expect(saida).toMatch(/disabled=""[^>]*>Cumpra as missões para receber/)
+  })
+
+  it('jogo novo abre com "Começar"; depois do epílogo a Crônica diz que acabou', () => {
+    comEstado(estadoInicial(0, 1))
+    expect(html(<CronicaSheet />)).toContain('>Começar<')
+    comEstado(comCampanha(meioDeJogo(), [], [1, 2, 3, 4, 5, 6, 7]))
+    const fim = html(<CronicaSheet />)
+    expect(fim).toContain('Fim da crônica')
+    comEstado(comCampanha(meioDeJogo(), [], [1, 2, 3, 4, 5, 6, 7]))
+    expect(html(<ObjetivoBanner />)).toContain('Abrir a Crônica')
   })
 })
