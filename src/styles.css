@@ -107,6 +107,7 @@ p {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0 var(--espaco);
 }
 
@@ -1444,7 +1445,7 @@ p {
 }
 
 .botao-pequeno {
-  min-height: 44px;
+  min-height: 48px;
   font-size: 16px;
 }
 
@@ -1987,4 +1988,270 @@ p {
   .segurar-enchimento {
     transition: none;
   }
+}
+
+/* Fatia 5: encomendas, conquistas, dicas, aviso de versão. */
+.encomendas-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.encomenda {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-left: 6px solid var(--aco);
+}
+
+.encomenda.pronta {
+  border-left-color: var(--amarelo);
+}
+
+.encomenda-topo {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.encomenda-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.encomenda-texto h3 {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.encomenda-papel {
+  color: var(--texto-suave);
+  font-size: 15px;
+}
+
+.encomenda-fala {
+  color: var(--texto-suave);
+  font-style: italic;
+  font-size: 16px;
+}
+
+.encomenda-pedido {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 21px;
+  line-height: 1.15;
+  color: var(--texto);
+}
+
+.encomenda-linhas {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 16px;
+  color: var(--texto-suave);
+}
+
+.encomenda-prazo.urgente {
+  color: var(--laranja);
+  font-weight: 600;
+}
+
+.encomenda-tem.ok {
+  color: var(--amarelo);
+  font-weight: 600;
+}
+
+.encomenda-paga {
+  display: flex;
+  gap: 16px;
+}
+
+.encomenda-valor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.botao-conquistas {
+  justify-content: flex-start;
+  margin-top: 8px;
+}
+
+.botao-conquistas .botao-sub {
+  margin-left: auto;
+}
+
+.conquistas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.conquista {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-left: 4px solid var(--aco);
+  background: var(--carvao);
+  border-radius: 4px;
+}
+
+.conquista.feita {
+  border-left-color: var(--amarelo);
+}
+
+.conquista-apagada {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+.conquista-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.conquista-nome {
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.conquista-descricao {
+  color: var(--texto-suave);
+  font-size: 15px;
+}
+
+.conquista-estado {
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--texto-suave);
+}
+
+.conquista.feita .conquista-estado {
+  color: var(--amarelo);
+}
+
+.estatisticas {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.estatistica {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--aco-desligado);
+  font-size: 16px;
+}
+
+.estatistica dt {
+  color: var(--texto-suave);
+}
+
+.estatistica dd {
+  margin: 0;
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.dica {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  background: #34303a;
+  border: 1px dashed var(--laranja);
+  border-radius: var(--raio);
+  font-size: 16px;
+}
+
+.dica p {
+  flex: 1;
+}
+
+.dica .botao {
+  flex: none;
+}
+
+.toast-area {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+  padding: 0 var(--espaco);
+  pointer-events: none;
+  z-index: 20;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 456px;
+  padding: 10px 12px;
+  border-color: var(--amarelo);
+}
+
+.toast-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.toast-titulo {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--amarelo);
+}
+
+.toast-sub {
+  font-size: 15px;
+  color: var(--texto-suave);
+}
+
+.aviso-atualizacao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 var(--espaco);
+  padding: 8px 12px;
+  border-color: var(--laranja);
+}
+
+.aviso-atualizacao p {
+  font-weight: 600;
+}
+
+.aviso-atualizacao-botoes {
+  display: flex;
+  gap: 8px;
 }

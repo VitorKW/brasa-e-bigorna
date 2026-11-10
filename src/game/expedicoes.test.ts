@@ -51,8 +51,8 @@ describe('chance e loot (GDD §4.2)', () => {
   })
 
   it('reputação por sucesso = K × horas^0,5, sem a vantagem das expedições curtas e repetidas', () => {
-    expect(reputacaoDe('passo')).toBeCloseTo(17, 6)
-    expect(reputacaoDe('pico')).toBeCloseTo(17 * Math.sqrt(8), 6)
+    expect(reputacaoDe('passo')).toBeCloseTo(15, 6)
+    expect(reputacaoDe('pico')).toBeCloseTo(15 * Math.sqrt(8), 6)
     // quanto mais longa, mais reputação por sucesso...
     for (let i = 1; i < EXPEDICOES.length; i++) {
       expect(reputacaoDe(EXPEDICOES[i]!)).toBeGreaterThan(reputacaoDe(EXPEDICOES[i - 1]!))
@@ -67,7 +67,7 @@ describe('chance e loot (GDD §4.2)', () => {
   it('retorno decrescente: com mais reputação acumulada, cada sucesso rende menos', () => {
     expect(reputacaoDe('passo', 0)).toBeGreaterThan(reputacaoDe('passo', 500))
     expect(reputacaoDe('passo', 500)).toBeGreaterThan(reputacaoDe('passo', 1500))
-    expect(reputacaoDe('passo', 1000)).toBeCloseTo(17 / 2, 6) // R = 1000: metade em 1 000
+    expect(reputacaoDe('passo', 1000)).toBeCloseTo(15 / 2, 6) // R = 1000: metade em 1 000
     // nunca zera: quem passa de 1 000 ainda ganha um pouco
     expect(reputacaoDe('trilha', 100_000)).toBeGreaterThan(0)
   })

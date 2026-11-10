@@ -5,6 +5,7 @@ import type { ResumoOffline } from '../game/offline.ts'
 import { DEF_EXPEDICAO } from '../game/expedicoes.ts'
 import { QUALIDADES, rotuloQualidade } from '../game/items.ts'
 import { COR_QUALIDADE } from './qualidade.ts'
+import { useGame } from '../store.ts'
 import { Sprite, type SpriteNome } from './Sprite.tsx'
 
 const LINHAS: { id: keyof ResumoOffline['produzido']; rotulo: string; icone: SpriteNome }[] = [
@@ -20,6 +21,8 @@ export function OfflineModal({ resumo, onFechar }: { resumo: ResumoOffline; onFe
   // o primeiro 'Vender tudo' logo após fechar era engolido pelo backdrop).
   const presente = useIsPresent()
   const botao = useRef<HTMLButtonElement>(null)
+  const autoVenda = useGame((s) => s.jogo.autoVenda)
+  const alternarAutoVenda = useGame((s) => s.alternarAutoVenda)
 
   useEffect(() => {
     botao.current?.focus()
@@ -112,8 +115,21 @@ export function OfflineModal({ resumo, onFechar }: { resumo: ResumoOffline; onFe
             </ul>
           </div>
         )}
+        {resumo.vendidosAuto > 0 && (
+          <p className="modal-texto">
+            A venda automática vendeu {resumo.vendidosAuto} {resumo.vendidosAuto === 1 ? 'item' : 'itens'} e rendeu{' '}
+            <strong>{formatar(resumo.ganhoAuto)}</strong> moedas.
+          </p>
+        )}
         {resumo.inventarioCheio && (
-          <p className="modal-texto">O inventário encheu e a bigorna parou. Venda itens para ela continuar.</p>
+          <>
+            <p className="modal-texto">O inventário encheu e a bigorna parou. Venda itens para ela continuar.</p>
+            {!autoVenda && (
+              <button type="button" className="botao botao-secundario botao-largo" onClick={alternarAutoVenda}>
+                Ligar a venda automática
+              </button>
+            )}
+          </>
         )}
         <button
           ref={botao}

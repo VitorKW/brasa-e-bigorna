@@ -3,7 +3,7 @@
 //
 // O que ZERA: estações (voltam ao nível 1; bigorna e forno de aço a 0), moedas, recursos, itens
 // (inclusive os equipados), forja e fila, nível e XP dos ferreiros e o nível/equipamento dos heróis.
-// O que FICA: brasas e talentos, heróis (nível 1, sem equipamento), ferreiros contratados (nível 1,
+// O que FICA: estatísticas e conquistas, brasas e talentos, heróis (nível 1, sem equipamento), ferreiros contratados (nível 1,
 // no mesmo posto), reputação, construções, chefes derrotados (regiões abertas) e fragmentos.
 // Expedições em andamento BLOQUEIAM o Reforjar; as que já voltaram são coletadas na hora.
 import { MOEDAS_INICIAIS } from './constants.ts'
@@ -117,6 +117,9 @@ export function reforjar(s: GameState, now: number): GameState {
     ultimoMaterial: 'ferro',
     herois: e.herois.map((h) => ({ ...h, nivel: 1, xp: 0, equipamento: equipamentoVazio() })),
     expedicoes: [],
+    // Os pedidos eram do ciclo anterior (itens e bigorna zeraram); a espera recomeça junto da bigorna.
+    encomendas: [],
+    proximaEncomenda: 0,
     brasas: e.brasas + ganhas,
     reforjas: e.reforjas + 1,
   }

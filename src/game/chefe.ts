@@ -44,9 +44,9 @@ export const DEF_CHEFE: Record<ChefeId, DefChefe> = {
   serpe: {
     nome: 'Serpe de Cinza',
     exige: 'golem',
-    // GDD §4.2: PV 25 000, ATQ 220, DEF 120. Ajustado pelo sim: PV 33 000 e VEL 12 (ver GDD).
+    // GDD §4.2: PV 25 000, ATQ 220, DEF 120. Ajustado pelo sim: PV 33 000, ATQ 6 000 e VEL 12 (ver GDD).
     pv: 33_000,
-    atq: 220,
+    atq: 6000,
     def: 120,
     vel: 12,
     reputacao: 150,

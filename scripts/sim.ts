@@ -76,6 +76,7 @@ function continua() {
     ['Itens forjados', String(r.itensForjados)],
     ['  de ferro', QUALIDADES.map((q) => `${q} ${r.itensPorMaterial.ferro[q]}`).join(', ')],
     ['  de aço', QUALIDADES.map((q) => `${q} ${r.itensPorMaterial.aco[q]}`).join(', ')],
+    ['Encomendas (entregues / vencidas / reputação)', `${r.encomendas.entregues} / ${r.encomendas.expiradas} / ${virgula(r.encomendas.reputacao, 0)}`],
     [
       'Expedições (enviadas / sucessos / falhas)',
       `${r.expedicoes.enviadas} / ${r.expedicoes.sucessos} / ${r.expedicoes.falhas}`,
@@ -141,6 +142,7 @@ function porDias() {
     ['Segundo ciclo / primeiro ciclo', razao === null ? 'não atingiu' : `${virgula(razao * 100, 0)} %`],
     ['Moedas acumuladas ao fim de cada dia', r.moedasPorDia.map(milhoes).join(', ')],
     ['Expedições (enviadas / sucessos / falhas)', `${r.expedicoes.enviadas} / ${r.expedicoes.sucessos} / ${r.expedicoes.falhas}`],
+    ['Encomendas (entregues / vencidas / reputação)', `${r.encomendas.entregues} / ${r.encomendas.expiradas} / ${virgula(r.encomendas.reputacao, 0)}`],
     ['Maior valor visto (limite 1e15)', r.maiorValor.toExponential(2).replace('.', ',')],
   ])
   console.log('')

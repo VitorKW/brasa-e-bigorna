@@ -1,6 +1,9 @@
 import { ESTACOES, ESTACOES_PRODUCAO, RECURSOS, SAVE_VERSION, type EstacaoId } from './constants.ts'
 import { CHEFES, type ChefeId } from './chefe.ts'
+import { CONQUISTAS, type ConquistaId } from './conquistas.ts'
 import { CONSTRUCOES, type ConstrucaoId } from './construcoes.ts'
+import { NPCS, type Encomenda } from './encomendas.ts'
+import { CAMPOS_ESTATISTICAS, estatisticasIniciais, type Estatisticas } from './estatisticas.ts'
 import { EXPEDICOES, type Expedicao } from './expedicoes.ts'
 import { FERREIROS, podeAlocar, type Ferreiro } from './ferreiros.ts'
 import { CLASSES, equipamentoVazio, type Equipamento, type Heroi } from './herois.ts'
@@ -73,6 +76,29 @@ export const MIGRACOES: Migracoes = {
     talentos: [],
     reforjas: 0,
   }),
+  /**
+   * Fatia 4 -> fatia 5: sem encomendas, conquistas nem dicas; venda automática e som desligados. As
+   * estatísticas nascem do que o save já diz (itens forjados = ids de item emitidos; lingote fundido = quem
+   * já forjou ou subiu a fornalha), para não zerar a história de quem já joga. As conquistas se desbloqueiam
+   * sozinhas no primeiro tick, pelo estado.
+   */
+  4: (raw) => {
+    const itensForjados = ehNumero(raw.proximoIdItem) ? Math.max(0, Math.floor(raw.proximoIdItem) - 1) : 0
+    const niveis = ehObjeto(raw.niveis) ? raw.niveis : {}
+    const fundiu = itensForjados > 0 || (ehNumero(niveis.fornalha) && niveis.fornalha > 1) || (ehNumero(raw.moedasGanhas) && raw.moedasGanhas > 0)
+    return {
+      ...raw,
+      version: 5,
+      encomendas: [],
+      proximoIdEncomenda: 1,
+      proximaEncomenda: 0,
+      autoVenda: false,
+      conquistas: [],
+      stats: { ...estatisticasIniciais(), itensForjados, lingotesFundidos: fundiu ? 1 : 0, sessoes: 1 },
+      som: false,
+      dicasVistas: [],
+    }
+  },
 }
 
 const ehNumero = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x)
@@ -174,6 +200,46 @@ function validarForja(x: unknown): Forja | null | undefined {
   }
 }
 
+function validarEncomendas(x: unknown): Encomenda[] | null {
+  if (!Array.isArray(x)) return null
+  const r: Encomenda[] = []
+  const npcs = new Set<string>()
+  for (const e of x) {
+    if (!ehObjeto(e)) return null
+    if (!ehUm(NPCS, e.npc) || !ehUm(TIPOS_ITEM, e.tipo) || !ehUm(MATERIAIS, e.material) || !ehUm(QUALIDADES, e.qualidade)) return null
+    const { id, quantidade, criada, prazo, recompensa, reputacao } = e
+    if (!ehNumero(id) || !ehNumero(quantidade) || !ehNumero(criada) || !ehNumero(prazo)) return null
+    if (!ehNumero(recompensa) || !ehNumero(reputacao) || quantidade < 1 || recompensa < 0 || reputacao < 0) return null
+    // Morador repetido ou além do limite de 3 (save adulterado): descarta só o excesso.
+    if (npcs.has(e.npc) || r.length >= 3) continue
+    npcs.add(e.npc)
+    r.push({
+      id: Math.floor(id),
+      npc: e.npc,
+      tipo: e.tipo,
+      material: e.material,
+      qualidade: e.qualidade,
+      quantidade: Math.min(9, Math.floor(quantidade)),
+      criada,
+      prazo,
+      recompensa,
+      reputacao,
+    })
+  }
+  return r
+}
+
+function validarStats(x: unknown): Estatisticas | null {
+  if (!ehObjeto(x)) return null
+  const r = estatisticasIniciais()
+  for (const campo of CAMPOS_ESTATISTICAS) {
+    const v = x[campo]
+    if (!ehNumero(v) || v < 0) return null
+    r[campo] = v
+  }
+  return r
+}
+
 function validarFerreiros(x: unknown): GameState['ferreiros'] | null {
   if (!ehObjeto(x)) return null
   const r = ferreirosIniciais()
@@ -252,6 +318,15 @@ export function validarEstado(raw: unknown): GameState | null {
   const construcoes = CONSTRUCOES.filter((c) => (raw.construcoes as unknown[]).includes(c)) as ConstrucaoId[]
   const talentos = TALENTOS.filter((c) => (raw.talentos as unknown[]).includes(c)) as TalentoId[]
 
+  const encomendas = validarEncomendas(raw.encomendas)
+  const stats = validarStats(raw.stats)
+  if (!encomendas || !stats) return null
+  if (!ehNumero(raw.proximoIdEncomenda) || !ehNumero(raw.proximaEncomenda)) return null
+  if (typeof raw.autoVenda !== 'boolean' || typeof raw.som !== 'boolean') return null
+  if (!Array.isArray(raw.conquistas) || !Array.isArray(raw.dicasVistas)) return null
+  const conquistas = CONQUISTAS.filter((c) => (raw.conquistas as unknown[]).includes(c)) as ConquistaId[]
+  const dicasVistas = [...new Set((raw.dicasVistas as unknown[]).filter((d): d is string => typeof d === 'string'))].slice(0, 50)
+
   return {
     version: SAVE_VERSION,
     lastTick: raw.lastTick,
@@ -280,6 +355,14 @@ export function validarEstado(raw: unknown): GameState | null {
     brasas: Math.max(0, Math.floor(raw.brasas)),
     talentos,
     reforjas: Math.max(0, Math.floor(raw.reforjas)),
+    encomendas,
+    proximoIdEncomenda: Math.max(1, Math.floor(raw.proximoIdEncomenda), ...encomendas.map((e) => e.id + 1)),
+    proximaEncomenda: raw.proximaEncomenda,
+    autoVenda: raw.autoVenda,
+    conquistas,
+    stats,
+    som: raw.som,
+    dicasVistas,
   }
 }
 

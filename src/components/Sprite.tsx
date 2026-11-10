@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { CONSTRUCOES, type ConstrucaoId } from '../game/construcoes.ts'
+import { NPCS, type NpcId } from '../game/encomendas.ts'
 import { FERREIROS, type FerreiroId } from '../game/ferreiros.ts'
 import { CLASSES, type ClasseId } from '../game/herois.ts'
 import { MATERIAIS, TIPOS_ITEM, type MaterialId, type TipoItem } from '../game/items.ts'
@@ -30,6 +31,8 @@ export type SpriteNome =
   | `construcao_${ConstrucaoId}`
   | `talento_${RamoId}`
   | 'icone_brasa'
+  | 'icone_conquista'
+  | `npc_${NpcId}`
   | 'regiao_vale'
   | 'regiao_serra'
 
@@ -91,8 +94,27 @@ const SPRITES_TALENTO = Object.fromEntries(
   ]),
 ) as Record<`talento_${RamoId}`, Def>
 
+const COR_NPC: Record<NpcId, string> = {
+  quiteria: '#8a5a2a',
+  amaro: '#3f5f7a',
+  tonico: '#4d6b3a',
+  jurema: '#7a4a6a',
+  ines: '#5a6b3a',
+  dito: '#a0522d',
+  almir: '#6a5a8a',
+  zuleica: '#3f7a6a',
+}
+
+const SPRITES_NPC = Object.fromEntries(
+  NPCS.map((n) => [
+    `npc_${n}`,
+    { w: 24, h: 24, cor: COR_NPC[n], texto: '#f3e9dc', inicial: n.charAt(0).toUpperCase() } satisfies Def,
+  ]),
+) as Record<`npc_${NpcId}`, Def>
+
 const SPRITES: Record<SpriteNome, Def> = {
   ...SPRITES_ITEM,
+  ...SPRITES_NPC,
   ...SPRITES_CONSTRUCAO,
   ...SPRITES_TALENTO,
   ...SPRITES_FERREIRO,
@@ -115,6 +137,7 @@ const SPRITES: Record<SpriteNome, Def> = {
   chefe_golem: { w: 48, h: 48, cor: '#4a3f45', texto: '#f3e9dc', inicial: 'G' },
   chefe_serpe: { w: 48, h: 48, cor: '#5a4a3c', texto: '#f3e9dc', inicial: 'S' },
   icone_brasa: { w: 16, h: 16, cor: '#e2582a', texto: '#1b1618', inicial: 'B' },
+  icone_conquista: { w: 16, h: 16, cor: '#ffd47a', texto: '#1b1618', inicial: 'C' },
   regiao_vale: { w: 96, h: 32, cor: '#3f5a3a', texto: '#f3e9dc', inicial: 'Vale' },
   regiao_serra: { w: 96, h: 32, cor: '#4a4f5c', texto: '#f3e9dc', inicial: 'Serra' },
 }

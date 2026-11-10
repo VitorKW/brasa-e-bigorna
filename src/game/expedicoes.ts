@@ -70,7 +70,7 @@ export const EXPEDICAO = {
    * rendia 765 de reputação em 2 h); o divisor é um retorno decrescente pela reputação acumulada,
    * para a Muralha (1 000) não ser trivial nem um gargalo absurdo. Ver GDD §4.2 e §4.5.
    */
-  reputacaoK: 17,
+  reputacaoK: 15,
   reputacaoExpoenteHoras: 0.5,
   reputacaoR: 1000,
 } as const

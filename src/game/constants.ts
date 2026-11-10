@@ -73,7 +73,7 @@ export const OFFLINE = {
 } as const
 
 export const MOEDAS_INICIAIS = 10
-export const SAVE_VERSION = 4
+export const SAVE_VERSION = 5
 
 /** marco(n) = 2 ^ (quantidade de marcos já atingidos). */
 export function marco(n: number): number {

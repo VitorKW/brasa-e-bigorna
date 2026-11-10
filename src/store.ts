@@ -7,7 +7,11 @@ import {
   removerDaFila as removerDaFilaRegra,
   type Forjado,
 } from './game/bigorna.ts'
+import { aplicarConquistas, type ConquistaId } from './game/conquistas.ts'
 import { construir as construirRegra, type ConstrucaoId } from './game/construcoes.ts'
+import { avancarEncomendas, entregar as entregarRegra, type Entrega } from './game/encomendas.ts'
+import { registrarSessao, somarTempoAtivo } from './game/estatisticas.ts'
+import { tocar, type SomId } from './audio.ts'
 import { lutarChefe, type ChefeId, type RecompensaChefe, type ResultadoCombate } from './game/chefe.ts'
 import {
   coletar as coletarRegra,
@@ -34,6 +38,8 @@ const CHAVE_BACKUP = 'brasa-e-bigorna:save-backup'
 
 /** Acima disso o intervalo vira "offline" (aba em segundo plano, celular bloqueado). */
 const LIMITE_TICK_NORMAL_S = 5
+/** Voltar depois de tanto tempo fora conta como uma nova sessão nas estatísticas. */
+const AUSENCIA_NOVA_SESSAO_S = 5 * 60
 
 function lerSave(): GameState | null {
   try {
@@ -85,6 +91,10 @@ interface Store {
   ultimaColeta: { id: number; coleta: Coleta } | null
   /** Último Reforjar (a tela mostra o que rendeu). Só UI; não vai para o save. */
   ultimoReforjar: { id: number; brasas: number } | null
+  /** Conquistas recém-desbloqueadas, esperando o aviso discreto. Só UI. */
+  avisoConquistas: ConquistaId[]
+  /** Última entrega de encomenda (a UI mostra o morador agradecendo). Só UI. */
+  ultimaEntrega: { id: number; entrega: Entrega } | null
   irPara: (aba: AbaId) => void
   avancar: (now: number) => void
   melhorar: (estacao: EstacaoId) => void
@@ -112,19 +122,37 @@ interface Store {
   construir: (id: ConstrucaoId) => void
   comprarTalento: (id: TalentoId) => void
   reforjar: () => void
+  entregarEncomenda: (id: number) => void
+  alternarAutoVenda: () => void
+  alternarSom: () => void
+  dispensarDica: (id: string) => void
+  fecharAvisoConquistas: () => void
 }
 
-function iniciar(): Pick<Store, 'jogo' | 'resumoOffline'> {
+/** Depois de cada passo do jogo: encomendas que vencem ou surgem e conquistas que passaram a valer. */
+function aposPasso(jogo: GameState, agora: number): { jogo: GameState; novas: ConquistaId[] } {
+  const r = aplicarConquistas(avancarEncomendas(jogo, agora))
+  return { jogo: r.estado, novas: r.novas }
+}
+
+function iniciar(): Pick<Store, 'jogo' | 'resumoOffline' | 'avisoConquistas'> {
   const agora = Date.now()
   const salvo = lerSave()
   if (!salvo) {
-    return { jogo: estadoInicial(agora, semente(Math.random() * 2 ** 32)), resumoOffline: null }
+    const novo = registrarSessao(estadoInicial(agora, semente(Math.random() * 2 ** 32)))
+    return { jogo: novo, resumoOffline: null, avisoConquistas: [] }
   }
-  const { estado, resumo } = applyOffline(salvo, agora)
+  const { estado, resumo } = applyOffline(registrarSessao(salvo), agora)
+  const r = aposPasso(estado, agora)
   return {
-    jogo: estado,
+    jogo: r.jogo,
     resumoOffline: resumo.segundosSimulados > OFFLINE.minimoModalSegundos ? resumo : null,
+    avisoConquistas: r.novas,
   }
+}
+
+const somAtivo = (jogo: GameState, id: SomId): void => {
+  if (jogo.som) tocar(id)
 }
 
 let contadorGanho = 0
@@ -133,6 +161,7 @@ let contadorBatida = 0
 let contadorColeta = 0
 let contadorCombate = 0
 let contadorReforjar = 0
+let contadorEntrega = 0
 
 export const useGame = create<Store>((set, get) => ({
   aba: 'forja',
@@ -143,6 +172,7 @@ export const useGame = create<Store>((set, get) => ({
   combate: null,
   ultimaColeta: null,
   ultimoReforjar: null,
+  ultimaEntrega: null,
 
   irPara: (aba) => set({ aba, ultimoReforjar: null }),
 
@@ -155,20 +185,29 @@ export const useGame = create<Store>((set, get) => ({
       return
     }
     if (dt > LIMITE_TICK_NORMAL_S) {
-      const { estado, resumo } = applyOffline(jogo, now)
+      const base = dt >= AUSENCIA_NOVA_SESSAO_S ? registrarSessao(jogo) : jogo
+      const { estado, resumo } = applyOffline(base, now)
+      const pos = aposPasso(estado, now)
       set({
-        jogo: estado,
+        jogo: pos.jogo,
         resumoOffline:
           resumo.segundosSimulados > OFFLINE.minimoModalSegundos ? resumo : get().resumoOffline,
+        ...(pos.novas.length > 0 ? { avisoConquistas: [...get().avisoConquistas, ...pos.novas] } : {}),
       })
       return
     }
     const r = tickDetalhado(jogo, dt)
     const ultimo = r.forjados[r.forjados.length - 1]
+    // Só soma tempo de sessão com a aba à vista: em segundo plano o navegador ainda dispara timers lentos.
+    const visivel = typeof document === 'undefined' || document.visibilityState !== 'hidden'
+    const base = visivel ? somarTempoAtivo({ ...r.estado, lastTick: now }, dt) : { ...r.estado, lastTick: now }
+    const pos = aposPasso(base, now)
     set({
-      jogo: { ...r.estado, lastTick: now },
+      jogo: pos.jogo,
       ...(ultimo ? { ultimoForjado: { id: ++contadorForjado, forjado: ultimo } } : {}),
+      ...(pos.novas.length > 0 ? { avisoConquistas: [...get().avisoConquistas, ...pos.novas] } : {}),
     })
+    if (pos.novas.length > 0) somAtivo(pos.jogo, 'conquista')
   },
 
   melhorar: (estacao) => {
@@ -186,7 +225,10 @@ export const useGame = create<Store>((set, get) => ({
       estado = res.estado
       total += res.ganho
     }
-    if (total > 0) set({ jogo: estado, ultimoGanho: { id: ++contadorGanho, valor: total } })
+    if (total > 0) {
+      set({ jogo: estado, ultimoGanho: { id: ++contadorGanho, valor: total } })
+      somAtivo(estado, 'moeda')
+    }
   },
 
   forjar: (receita, comBatida = false, material = 'ferro') => {
@@ -200,7 +242,13 @@ export const useGame = create<Store>((set, get) => ({
 
   alternarAutomatico: () => set({ jogo: alternarAutomatico(get().jogo) }),
 
-  registrarBatida: (posicao) => set({ jogo: registrarBatidaRegra(get().jogo, posicao) }),
+  registrarBatida: (posicao) => {
+    const novo = registrarBatidaRegra(get().jogo, posicao)
+    set({ jogo: novo })
+    const resultado = novo.forja?.batida
+    if (resultado === 'perfeito') somAtivo(novo, 'perfeito')
+    else if (resultado) somAtivo(novo, 'batida')
+  },
 
   fecharBatida: () => set({ batidaAtiva: null }),
 
@@ -218,12 +266,18 @@ export const useGame = create<Store>((set, get) => ({
 
   venderItem: (id) => {
     const r = venderItemRegra(get().jogo, id)
-    if (r.ganho > 0) set({ jogo: r.estado, ultimoGanho: { id: ++contadorGanho, valor: r.ganho } })
+    if (r.ganho > 0) {
+      set({ jogo: r.estado, ultimoGanho: { id: ++contadorGanho, valor: r.ganho } })
+      somAtivo(r.estado, 'moeda')
+    }
   },
 
   venderItens: (qualidade) => {
     const r = venderPorQualidade(get().jogo, qualidade)
-    if (r.ganho > 0) set({ jogo: r.estado, ultimoGanho: { id: ++contadorGanho, valor: r.ganho } })
+    if (r.ganho > 0) {
+      set({ jogo: r.estado, ultimoGanho: { id: ++contadorGanho, valor: r.ganho } })
+      somAtivo(r.estado, 'moeda')
+    }
   },
 
   fecharResumo: () => set({ resumoOffline: null }),
@@ -301,4 +355,33 @@ export const useGame = create<Store>((set, get) => ({
     set({ jogo: novo, ultimoReforjar: { id: ++contadorReforjar, brasas }, batidaAtiva: null, combate: null })
     gravarSave(novo)
   },
+
+  // O relógio da entrega é o mesmo que decide o prazo (Date.now), não o lastTick.
+  entregarEncomenda: (id) => {
+    const { jogo } = get()
+    const r = entregarRegra(jogo, id, Date.now())
+    if (!r.entrega) return
+    set({
+      jogo: r.estado,
+      ultimaEntrega: { id: ++contadorEntrega, entrega: r.entrega },
+      ultimoGanho: { id: ++contadorGanho, valor: r.entrega.moedas },
+    })
+    somAtivo(r.estado, 'entrega')
+  },
+
+  alternarAutoVenda: () => set({ jogo: { ...get().jogo, autoVenda: !get().jogo.autoVenda } }),
+
+  alternarSom: () => {
+    const novo = { ...get().jogo, som: !get().jogo.som }
+    set({ jogo: novo })
+    somAtivo(novo, 'moeda') // confirma que ligou (o toque também destrava o áudio no celular)
+  },
+
+  dispensarDica: (id) => {
+    const { jogo } = get()
+    if (jogo.dicasVistas.includes(id)) return
+    set({ jogo: { ...jogo, dicasVistas: [...jogo.dicasVistas, id] } })
+  },
+
+  fecharAvisoConquistas: () => set({ avisoConquistas: [] }),
 }))

@@ -216,7 +216,7 @@ describe('Golem de Escória', () => {
 })
 
 describe('Serpe de Cinza', () => {
-  /** Quatro heróis com kit de aço épico (o que o sim tem por volta de 12 h) e o Golem já caído. */
+  /** Heróis com escudo, armadura e elmo épicos de aço e arma lendária de aço (o kit do sim por volta de 24 h); o Golem já caiu. */
   function equipeDeAco(quantos: number): GameState {
     let s: GameState = {
       ...estadoInicial(0, 3),
@@ -231,7 +231,7 @@ describe('Serpe de Cinza', () => {
     for (const h of s.herois) {
       const kit: Item['tipo'][] = ['machado', 'escudo', 'armadura', 'elmo']
       for (const tipo of kit) {
-        s = { ...s, itens: [...s.itens, item(id, tipo, 'epico', 'aco')] }
+        s = { ...s, itens: [...s.itens, item(id, tipo, tipo === 'machado' ? 'lendario' : 'epico', 'aco')] }
         s = equipar(s, h.id, id)
         id++
       }
@@ -239,8 +239,9 @@ describe('Serpe de Cinza', () => {
     return { ...s, proximoIdItem: id }
   }
 
-  it('tem os números do GDD (ATQ 220, DEF 120) com PV e VEL ajustados pelo sim', () => {
-    expect(DEF_CHEFE.serpe).toMatchObject({ atq: 220, def: 120, exige: 'golem' })
+  it('tem DEF 120 do GDD, com ATQ, PV e VEL ajustados pelo sim (fatia 5: ela pesa)', () => {
+    expect(DEF_CHEFE.serpe).toMatchObject({ def: 120, exige: 'golem' })
+    expect(DEF_CHEFE.serpe.atq).toBeGreaterThanOrEqual(3000)
     expect(DEF_CHEFE.serpe.pv).toBeGreaterThanOrEqual(25_000)
     expect(DEF_CHEFE.serpe.vel).toBeGreaterThan(0)
     expect(combatenteChefe('serpe').pvMax).toBe(DEF_CHEFE.serpe.pv)
@@ -264,11 +265,20 @@ describe('Serpe de Cinza', () => {
     expect(r.estado).toBe(s)
   })
 
-  it('o kit épico de aço de 3 heróis não derruba a Serpe em 30 rodadas, o de 4 sim (a Taverna decide)', () => {
-    expect(preverChefe(equipeDeAco(3), 'serpe', [1, 2, 3]).vitoria).toBe(false)
+  it('o kit de 3 heróis não derruba a Serpe em 30 rodadas, o de 4 sim (a Taverna decide)', () => {
+    const tres = preverChefe(equipeDeAco(3), 'serpe', [1, 2, 3])
+    expect(tres.vitoria).toBe(false)
     const quatro = preverChefe(equipeDeAco(4), 'serpe', [1, 2, 3, 4])
     expect(quatro.vitoria).toBe(true)
     expect(quatro.rodadas).toBeLessThanOrEqual(COMBATE.rodadasMax)
+  })
+
+  it('a Serpe pesa: com 3 heróis o grupo todo cai, e mesmo vencendo com 4 ela derruba alguém', () => {
+    const tres = preverChefe(equipeDeAco(3), 'serpe', [1, 2, 3])
+    expect(tres.sobreviventes).toBe(0)
+    const quatro = preverChefe(equipeDeAco(4), 'serpe', [1, 2, 3, 4])
+    expect(quatro.sobreviventes).toBeLessThan(4)
+    expect(quatro.sobreviventes).toBeGreaterThan(0)
   })
 
   it('vitória dá 150 de reputação, 10 fragmentos e uma armadura lendária de aço, e registra o chefe', () => {

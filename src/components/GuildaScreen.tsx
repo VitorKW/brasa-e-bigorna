@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CONQUISTAS } from '../game/conquistas.ts'
 import { maxHerois } from '../game/bonus.ts'
 import { DEF_EXPEDICAO, segundosParaVoltar, voltou } from '../game/expedicoes.ts'
 import { formatar, formatarCusto, formatarDuracao } from '../game/format.ts'
@@ -14,6 +15,8 @@ import {
 import { NOME_SLOT, SLOTS, rotuloQualidade } from '../game/items.ts'
 import { useGame } from '../store.ts'
 import { GradeAtributos } from './Atributos.tsx'
+import { ConquistasSheet } from './ConquistasSheet.tsx'
+import { Dica } from './Dica.tsx'
 import { EquiparSheet } from './EquiparSheet.tsx'
 import { COR_QUALIDADE } from './qualidade.ts'
 import { Sprite } from './Sprite.tsx'
@@ -182,10 +185,28 @@ function Recrutar() {
 /** Aba Guilda: heróis, equipamento e recrutamento. */
 export function GuildaScreen() {
   const herois = useGame((s) => s.jogo.herois)
+  const conquistas = useGame((s) => s.jogo.conquistas.length)
+  const semEquipamento = useGame((s) => s.jogo.herois.length === 1 && s.jogo.herois[0]!.equipamento.arma === null)
   const [equipando, setEquipando] = useState<number | null>(null)
+  const [verConquistas, setVerConquistas] = useState(false)
 
   return (
     <>
+      <button
+        type="button"
+        className="botao botao-secundario botao-largo botao-conquistas"
+        onClick={() => setVerConquistas(true)}
+        aria-label={`Conquistas e ajustes, ${conquistas} de ${CONQUISTAS.length}`}
+      >
+        <Sprite nome="icone_conquista" escala={2} />
+        <span>Conquistas e ajustes</span>
+        <span className="botao-sub">
+          {conquistas}/{CONQUISTAS.length}
+        </span>
+      </button>
+      <Dica id="heroi" visivel={semEquipamento}>
+        Forje armas e armaduras na bigorna, toque em Equipar e mande o herói ao Mapa. Ele traz moedas, XP e reputação.
+      </Dica>
       {herois.length === 0 ? (
         <section className="secao painel" aria-label="Heróis">
           <h2>Guilda</h2>
@@ -208,6 +229,7 @@ export function GuildaScreen() {
       )}
       <Recrutar />
       {equipando !== null && <EquiparSheet heroiId={equipando} onFechar={() => setEquipando(null)} />}
+      {verConquistas && <ConquistasSheet onFechar={() => setVerConquistas(false)} />}
     </>
   )
 }

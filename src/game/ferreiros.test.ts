@@ -97,10 +97,10 @@ describe('passivas', () => {
 })
 
 describe('XP', () => {
-  it('próximo nível em 10 × 1,65^(n−1)', () => {
+  it('próximo nível em 10 × 1,7^(n−1)', () => {
     expect(xpParaProximo(1)).toBe(10)
-    expect(xpParaProximo(2)).toBeCloseTo(16.5, 9)
-    expect(xpParaProximo(5)).toBeCloseTo(10 * 1.65 ** 4, 9)
+    expect(xpParaProximo(2)).toBeCloseTo(17, 9)
+    expect(xpParaProximo(5)).toBeCloseTo(10 * 1.7 ** 4, 9)
   })
 
   it('sobe de nível, guarda o resto e pode subir vários de uma vez', () => {
@@ -108,7 +108,7 @@ describe('XP', () => {
     const a = darXp(s, 'bigorna', 10)
     expect(a.ferreiros.cida.nivel).toBe(2)
     expect(a.ferreiros.cida.xp).toBeCloseTo(0, 9)
-    const b = darXp(s, 'bigorna', 10 + 16.5 + 5)
+    const b = darXp(s, 'bigorna', 10 + 17 + 5)
     expect(b.ferreiros.cida.nivel).toBe(3)
     expect(b.ferreiros.cida.xp).toBeCloseTo(5, 9)
   })

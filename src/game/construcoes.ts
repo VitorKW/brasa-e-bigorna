@@ -48,7 +48,9 @@ export const DEF_CONSTRUCAO: Record<ConstrucaoId, DefConstrucao> = {
   taverna: {
     nome: 'Taverna',
     reputacao: 400,
-    custo: 11_000_000,
+    // Fatia 5: 11 M -> 32 M. A venda automática multiplicou a renda por ~2,8; 31 a 32 M é a faixa em que a Serpe cai
+    // entre 24 h e 28 h 36 min em todos os passos do sim (GDD §4.2, notas da fatia 5).
+    custo: 32_000_000,
     exige: null,
     descricao: 'Aventureiros param aqui para beber e ouvir propostas.',
     efeito: 'Abre a 4ª vaga de herói.',
@@ -56,7 +58,7 @@ export const DEF_CONSTRUCAO: Record<ConstrucaoId, DefConstrucao> = {
   mercado: {
     nome: 'Mercado',
     reputacao: 650,
-    custo: 10_000_000,
+    custo: 9_000_000, // fatia 5: era 10 M
     exige: null,
     descricao: 'Barracas, balanças e gente de fora comprando.',
     efeito: `+${Math.round(MERCADO_BONUS * 100)} % no preço de venda de recursos e itens.`,
@@ -64,7 +66,7 @@ export const DEF_CONSTRUCAO: Record<ConstrucaoId, DefConstrucao> = {
   muralha: {
     nome: 'Muralha',
     reputacao: 1000,
-    custo: 12_000_000,
+    custo: 18_000_000, // fatia 5: era 12 M; sai ~7 h 30 min depois da Serpe (era 27 h)
     exige: 'serpe',
     descricao: 'Com a Serpe de Cinza vencida, o vilarejo ergue pedra e vira cidade.',
     efeito: 'Libera o Reforjar.',

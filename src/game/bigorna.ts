@@ -180,11 +180,25 @@ export function concluir(s: GameState): { estado: GameState; forjados: Forjado[]
     novos.push({ id: s.proximoIdItem + 1, ...molde })
   }
 
+  // Contadores (fatia 5). A sequência de perfeitas só conta quem usou o minigame: a forja automática
+  // não quebra a sequência, mas "bom" e "errou" quebram.
+  const st = s.stats
+  const usouBatida = f.batida !== 'automatico'
+  const perfeitas = f.batida === 'perfeito' ? st.perfeitasSeguidas + 1 : usouBatida ? 0 : st.perfeitasSeguidas
   let estado: GameState = {
     ...s,
     forja: null,
     itens: [...s.itens, ...novos],
     proximoIdItem: s.proximoIdItem + novos.length,
+    stats: {
+      ...st,
+      itensForjados: st.itensForjados + novos.length,
+      lendariosForjados: st.lendariosForjados + (qualidade === 'lendario' ? novos.length : 0),
+      forjasTotal: st.forjasTotal + 1,
+      forjasComBatida: st.forjasComBatida + (usouBatida ? 1 : 0),
+      perfeitasSeguidas: perfeitas,
+      melhorSequenciaPerfeita: Math.max(st.melhorSequenciaPerfeita, perfeitas),
+    },
   }
   estado = darXp(estado, 'bigorna', 1)
   return { estado, forjados: novos.map((item) => ({ item, batida: f.batida })) }

@@ -2,6 +2,7 @@ import { FORNO, RECEITA_ACO, RECEITA_LINGOTE, type RecursoId } from './constants
 import { avancarBigorna, type Forjado } from './bigorna.ts'
 import { taxas } from './chain.ts'
 import { XP_DIVISOR, darXp } from './ferreiros.ts'
+import { venderInuteis } from './inventario.ts'
 import type { GameState } from './state.ts'
 
 export type Produzido = Record<RecursoId, number>
@@ -14,12 +15,21 @@ export const PRODUZIDO_ZERO: Readonly<Produzido> = { minerio: 0, carvao: 0, ling
  */
 const SUBPASSO_SEGUNDOS = 1
 
+/** Venda automática (fatia 5): o que a bigorna entregou e o estado vendeu sozinho no intervalo. */
+export interface VendaAuto {
+  quantidade: number
+  ganho: number
+}
+
 export interface ResultadoTick {
   estado: GameState
   produzido: Produzido
   /** Itens concluídos neste intervalo, na ordem. */
   forjados: Forjado[]
+  vendaAuto: VendaAuto
 }
+
+const VENDA_AUTO_ZERO: Readonly<VendaAuto> = { quantidade: 0, ganho: 0 }
 
 /** Um passo sem fatiar: mina/carvoaria/fornalha, XP dos ferreiros e bigorna. */
 function passo(s: GameState, dt: number): ResultadoTick {
@@ -43,6 +53,7 @@ function passo(s: GameState, dt: number): ResultadoTick {
       lingote: s.recursos.lingote + lingotes,
       aco: s.recursos.aco,
     },
+    stats: { ...s.stats, lingotesFundidos: s.stats.lingotesFundidos + lingotes },
   }
   estado = darXp(estado, 'mina', minerioProd / XP_DIVISOR.mina)
   estado = darXp(estado, 'carvoaria', carvaoProd / XP_DIVISOR.carvoaria)
@@ -74,10 +85,19 @@ function passo(s: GameState, dt: number): ResultadoTick {
   }
 
   const b = avancarBigorna(estado, dt)
+  // Venda automática: só confere quando a bigorna concluiu algo neste passo.
+  let vendaAuto: VendaAuto = { ...VENDA_AUTO_ZERO }
+  let final = b.estado
+  if (final.autoVenda && b.forjados.length > 0) {
+    const v = venderInuteis(final)
+    final = v.estado
+    vendaAuto = { quantidade: v.vendidos, ganho: v.ganho }
+  }
   return {
-    estado: b.estado,
+    estado: final,
     produzido: { minerio: minerioProd, carvao: carvaoProd, lingote: lingotes, aco },
     forjados: b.forjados,
+    vendaAuto,
   }
 }
 
@@ -89,13 +109,14 @@ function passo(s: GameState, dt: number): ResultadoTick {
  */
 export function tickDetalhado(s: GameState, dtSeconds: number): ResultadoTick {
   if (!(dtSeconds > 0) || !Number.isFinite(dtSeconds)) {
-    return { estado: s, produzido: { ...PRODUZIDO_ZERO }, forjados: [] }
+    return { estado: s, produzido: { ...PRODUZIDO_ZERO }, forjados: [], vendaAuto: { ...VENDA_AUTO_ZERO } }
   }
   if (s.niveis.bigorna < 1 || dtSeconds <= SUBPASSO_SEGUNDOS) return passo(s, dtSeconds)
 
   let estado = s
   const produzido: Produzido = { ...PRODUZIDO_ZERO }
   const forjados: Forjado[] = []
+  const vendaAuto: VendaAuto = { ...VENDA_AUTO_ZERO }
   let restante = dtSeconds
   while (restante > 1e-9) {
     const r = passo(estado, Math.min(SUBPASSO_SEGUNDOS, restante))
@@ -105,9 +126,11 @@ export function tickDetalhado(s: GameState, dtSeconds: number): ResultadoTick {
     produzido.lingote += r.produzido.lingote
     produzido.aco += r.produzido.aco
     forjados.push(...r.forjados)
+    vendaAuto.quantidade += r.vendaAuto.quantidade
+    vendaAuto.ganho += r.vendaAuto.ganho
     restante -= SUBPASSO_SEGUNDOS
   }
-  return { estado, produzido, forjados }
+  return { estado, produzido, forjados, vendaAuto }
 }
 
 export function tick(s: GameState, dtSeconds: number): GameState {

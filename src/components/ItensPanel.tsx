@@ -11,6 +11,7 @@ import {
   type Qualidade,
 } from '../game/items.ts'
 import { useGame } from '../store.ts'
+import { Dica } from './Dica.tsx'
 import { COR_QUALIDADE } from './qualidade.ts'
 import { Sprite } from './Sprite.tsx'
 
@@ -61,6 +62,8 @@ export function ItensPanel() {
   const limite = useGame((s) => s.jogo.limiteInventario)
   const venderItem = useGame((s) => s.venderItem)
   const venderItens = useGame((s) => s.venderItens)
+  const autoVenda = useGame((s) => s.jogo.autoVenda)
+  const alternarAutoVenda = useGame((s) => s.alternarAutoVenda)
 
   const ordenados = useMemo(
     () => [...itens].sort((a, b) => ordemQualidade(b.qualidade) - ordemQualidade(a.qualidade) || b.id - a.id),
@@ -79,6 +82,31 @@ export function ItensPanel() {
           {cheio ? ' · cheio' : ''}
         </span>
       </div>
+
+      <Dica id="autovenda" visivel={itens.length >= limite * 0.7 && !autoVenda}>
+        O inventário enche e a bigorna para. Ligue a venda automática abaixo: ela guarda o que melhora seus heróis e o que
+        uma encomenda pede, e vende o resto.
+      </Dica>
+
+      <button
+        type="button"
+        className={`botao interruptor ${autoVenda ? 'ligado' : ''}`}
+        role="switch"
+        aria-checked={autoVenda}
+        onClick={alternarAutoVenda}
+      >
+        <span className="interruptor-trilho" aria-hidden="true">
+          <span className="interruptor-bola" />
+        </span>
+        <span>
+          Venda automática
+          <small>
+            {autoVenda
+              ? ' · vende o que não ajuda herói nem encomenda'
+              : ' · desligada (a bigorna para com o inventário cheio)'}
+          </small>
+        </span>
+      </button>
 
       {itens.length === 0 ? (
         <p className="estacao-dica">Nada forjado ainda. Escolha uma receita na bigorna.</p>

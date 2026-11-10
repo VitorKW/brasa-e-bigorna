@@ -202,6 +202,15 @@ describe('save', () => {
   })
 })
 
+/** Tira os campos da fatia 5: o que um save v3 ou v4 não tem. */
+function semFatia5(estado: object): Record<string, unknown> {
+  const r = { ...estado } as Record<string, unknown>
+  for (const k of ['encomendas', 'proximoIdEncomenda', 'proximaEncomenda', 'autoVenda', 'conquistas', 'stats', 'som', 'dicasVistas']) {
+    delete r[k]
+  }
+  return r
+}
+
 describe('save v4 (fatia 4)', () => {
   const v3 = (): Record<string, unknown> => {
     const { construcoes, brasas, talentos, reforjas, ...resto } = estadoInicial(1_700_000_000_000, 5)
@@ -209,8 +218,9 @@ describe('save v4 (fatia 4)', () => {
     void brasas
     void talentos
     void reforjas
+    const v3sem5 = semFatia5(resto)
     return {
-      ...resto,
+      ...v3sem5,
       version: 3,
       moedas: 777.5,
       moedasGanhas: 123_456,
@@ -228,7 +238,7 @@ describe('save v4 (fatia 4)', () => {
     const antigo = v3()
     const s = desserializar(JSON.stringify(antigo))
     expect(s).not.toBeNull()
-    expect(s!.version).toBe(4)
+    expect(s!.version).toBe(SAVE_VERSION)
     expect(s!.construcoes).toEqual([])
     expect(s!.brasas).toBe(0)
     expect(s!.talentos).toEqual([])
@@ -242,10 +252,10 @@ describe('save v4 (fatia 4)', () => {
     expect(desserializar(serializar(s!))).toEqual(s)
   })
 
-  it('cadeia completa: um save v1 chega à v4', () => {
+  it('cadeia completa: um save v1 chega à versão atual', () => {
     const v1 = { version: 1, lastTick: 5, niveis: { mina: 3, carvoaria: 2, fornalha: 2 }, recursos: { minerio: 1, carvao: 1, lingote: 1, aco: 0 }, moedas: 5, moedasGanhas: 5 }
     const s = desserializar(JSON.stringify(v1))
-    expect(s?.version).toBe(4)
+    expect(s?.version).toBe(SAVE_VERSION)
     expect(s?.construcoes).toEqual([])
   })
 
@@ -281,5 +291,107 @@ describe('save v4 (fatia 4)', () => {
     void talentos
     expect(desserializar(JSON.stringify(semTalentos))).toBeNull()
     expect(desserializar(JSON.stringify({ ...ok, brasas: 'muitas' }))).toBeNull()
+  })
+})
+
+describe('save v5 (fatia 5)', () => {
+  const v4 = (): Record<string, unknown> => ({
+    ...semFatia5(estadoInicial(1_700_000_000_000, 5)),
+    version: 4,
+    moedas: 5_000_000.5,
+    moedasGanhas: 40_000_000,
+    niveis: { mina: 30, carvoaria: 28, fornalha: 20, bigorna: 25, forno: 10 },
+    proximoIdItem: 701,
+    reputacao: 900,
+    chefesDerrotados: ['golem'],
+    construcoes: ['segunda_fornalha', 'armazem'],
+    reforjas: 1,
+    brasas: 3,
+  })
+
+  it('MIGRACOES[4] acrescenta encomendas, conquistas, estatísticas e opções sem mexer no resto', () => {
+    const s = desserializar(JSON.stringify(v4()))
+    expect(s).not.toBeNull()
+    expect(s!.version).toBe(5)
+    expect(s!.encomendas).toEqual([])
+    expect(s!.proximoIdEncomenda).toBe(1)
+    expect(s!.proximaEncomenda).toBe(0)
+    expect(s!.autoVenda).toBe(false)
+    expect(s!.som).toBe(false)
+    expect(s!.conquistas).toEqual([])
+    expect(s!.dicasVistas).toEqual([])
+    // o progresso da v4 continua igual
+    expect(s!.moedas).toBe(5_000_000.5)
+    expect(s!.reputacao).toBe(900)
+    expect(s!.construcoes).toEqual(['segunda_fornalha', 'armazem'])
+    expect(s!.brasas).toBe(3)
+    expect(s!.reforjas).toBe(1)
+    expect(desserializar(serializar(s!))).toEqual(s)
+  })
+
+  it('as estatísticas migradas nascem do que o save já diz', () => {
+    const s = desserializar(JSON.stringify(v4()))!
+    expect(s.stats.itensForjados).toBe(700) // ids de item emitidos
+    expect(s.stats.lingotesFundidos).toBeGreaterThanOrEqual(1)
+    expect(s.stats.sessoes).toBe(1)
+    expect(s.stats.encomendasEntregues).toBe(0)
+    // um save v4 recém-criado (sem progresso) não inventa itens
+    const novo = desserializar(JSON.stringify({ ...semFatia5(estadoInicial(0, 1)), version: 4 }))!
+    expect(novo.stats.itensForjados).toBe(0)
+    expect(novo.stats.lingotesFundidos).toBe(0)
+  })
+
+  it('cadeia completa: um save v1 chega à v5 com tudo no lugar', () => {
+    const v1 = { version: 1, lastTick: 5, niveis: { mina: 3, carvoaria: 2, fornalha: 2 }, recursos: { minerio: 1, carvao: 1, lingote: 1, aco: 0 }, moedas: 5, moedasGanhas: 5 }
+    const s = desserializar(JSON.stringify(v1))
+    expect(s?.version).toBe(5)
+    expect(s?.encomendas).toEqual([])
+    expect(s?.stats.sessoes).toBe(1)
+  })
+
+  it('ida e volta com encomendas, conquistas, estatísticas e opções', () => {
+    const base = estadoInicial(9, 3)
+    const s: GameState = {
+      ...base,
+      encomendas: [
+        { id: 4, npc: 'amaro', tipo: 'espada', material: 'ferro', qualidade: 'incomum', quantidade: 2, criada: 1000, prazo: 9_000_000, recompensa: 112.5, reputacao: 21 },
+      ],
+      proximoIdEncomenda: 5,
+      proximaEncomenda: 5_000_000,
+      autoVenda: true,
+      som: true,
+      conquistas: ['primeiro_lingote', 'golem'],
+      dicasVistas: ['melhorar'],
+      stats: { ...base.stats, itensForjados: 12, melhorSequenciaPerfeita: 3, encomendasEntregues: 4, tempoAtivoSegundos: 123.5, sessoes: 7 },
+    }
+    expect(desserializar(serializar(s))).toEqual(s)
+  })
+
+  it('encomenda malformada rejeita o save; morador repetido e excesso são descartados', () => {
+    const base = estadoInicial(9, 3)
+    const enc = (id: number, npc: string) => ({ id, npc, tipo: 'escudo', material: 'ferro', qualidade: 'comum', quantidade: 1, criada: 0, prazo: 99, recompensa: 45, reputacao: 10 })
+    expect(desserializar(JSON.stringify({ ...base, encomendas: [{ ...enc(1, 'amaro'), tipo: 'lança' }] }))).toBeNull()
+    expect(desserializar(JSON.stringify({ ...base, encomendas: [{ ...enc(1, 'amaro'), prazo: 'ontem' }] }))).toBeNull()
+    const lido = desserializar(
+      JSON.stringify({ ...base, encomendas: [enc(1, 'amaro'), enc(2, 'amaro'), enc(3, 'dito'), enc(4, 'ines'), enc(5, 'jurema')] }),
+    )!
+    expect(lido.encomendas.map((e) => e.id)).toEqual([1, 3, 4]) // sem repetir o morador, no máximo 3
+    expect(lido.proximoIdEncomenda).toBeGreaterThanOrEqual(5)
+  })
+
+  it('conquista desconhecida é descartada e dicas repetidas viram uma só', () => {
+    const base = estadoInicial(9, 3)
+    const lido = desserializar(JSON.stringify({ ...base, conquistas: ['golem', 'golem', 'dragao'], dicasVistas: ['a', 'a', 7, 'b'] }))!
+    expect(lido.conquistas).toEqual(['golem'])
+    expect(lido.dicasVistas).toEqual(['a', 'b'])
+  })
+
+  it('v5 sem os campos novos, ou com contador inválido, é rejeitado', () => {
+    const ok = estadoInicial(9, 3)
+    const { stats, ...semStats } = ok
+    void stats
+    expect(desserializar(JSON.stringify(semStats))).toBeNull()
+    expect(desserializar(JSON.stringify({ ...ok, stats: { ...ok.stats, sessoes: -1 } }))).toBeNull()
+    expect(desserializar(JSON.stringify({ ...ok, autoVenda: 'sim' }))).toBeNull()
   })
 })

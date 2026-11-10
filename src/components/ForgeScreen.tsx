@@ -15,6 +15,7 @@ import { multiplicadorEstacao } from '../game/ferreiros.ts'
 import { useGame } from '../store.ts'
 import { BigornaCard } from './BigornaCard.tsx'
 import { FerreirosPanel } from './FerreirosPanel.tsx'
+import { Dica } from './Dica.tsx'
 import { ItensPanel } from './ItensPanel.tsx'
 import { Sprite } from './Sprite.tsx'
 import { StationCard } from './StationCard.tsx'
@@ -41,6 +42,12 @@ export function ForgeScreen() {
 
   return (
     <>
+      <Dica id="melhorar" visivel={n.mina <= 3}>
+        Venda o minério (botão embaixo) e toque em Melhorar para cavar mais rápido. Mina e carvoaria alimentam a fornalha, e a fornalha, a bigorna.
+      </Dica>
+      <Dica id="bigorna" visivel={n.bigorna >= 1 && jogo.itens.length === 0 && jogo.stats.itensForjados === 0}>
+        A bigorna transforma lingotes em peças. Escolha uma receita e toque em Forjar: a peça vale muito mais que os lingotes.
+      </Dica>
       <section className="cadeia" aria-label="Estações da forja">
         <StationCard
           nome="Mina"

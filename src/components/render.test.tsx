@@ -16,6 +16,14 @@ import { ResourceBar } from './ResourceBar.tsx'
 import { TabBar } from './TabBar.tsx'
 import { ReforjarScreen } from './ReforjarScreen.tsx'
 import { VilarejoScreen } from './VilarejoScreen.tsx'
+import { AvisoAtualizacao } from './AvisoAtualizacao.tsx'
+import { ConquistasSheet } from './ConquistasSheet.tsx'
+import { EncomendasPanel } from './EncomendasPanel.tsx'
+import { ItensPanel } from './ItensPanel.tsx'
+import { OfflineModal } from './OfflineModal.tsx'
+import { ToastConquista } from './ToastConquista.tsx'
+import { applyOffline } from '../game/offline.ts'
+import type { Encomenda } from '../game/encomendas.ts'
 
 // Teste de fumaça: renderiza no servidor (sem navegador) para pegar erros de render
 // e conferir os textos principais. Não substitui testar no celular.
@@ -214,7 +222,7 @@ describe('aba Vilarejo', () => {
   it('lista as 5 construções com o efeito, a reputação que falta e o espaço das encomendas', () => {
     comEstado({ ...meioDeJogo(), reputacao: 60 })
     const saida = html(<VilarejoScreen />)
-    for (const texto of ['Segunda fornalha', 'Armazém', 'Taverna', 'Mercado', 'Muralha', 'Fornalha 50 % mais rápida', '/150 de reputação', 'Encomendas', 'em breve']) {
+    for (const texto of ['Segunda fornalha', 'Armazém', 'Taverna', 'Mercado', 'Muralha', 'Fornalha 50 % mais rápida', '/150 de reputação', 'Encomendas', 'Nenhum pedido agora']) {
       expect(saida, texto).toContain(texto)
     }
     expect(saida).toContain('não se gasta')
@@ -302,5 +310,142 @@ describe('brasas na barra de recursos', () => {
     expect(html(<ResourceBar />)).not.toContain('Brasas Ancestrais')
     comEstado({ ...meioDeJogo(), brasas: 7 })
     expect(html(<ResourceBar />)).toContain('Brasas Ancestrais: 7')
+  })
+})
+
+const pedidoAberto = (o: Partial<Encomenda> = {}): Encomenda => ({
+  id: 1,
+  npc: 'amaro',
+  tipo: 'espada',
+  material: 'ferro',
+  qualidade: 'incomum',
+  quantidade: 1,
+  criada: 0,
+  prazo: 3 * 3_600_000,
+  recompensa: 56.25,
+  reputacao: 14,
+  ...o,
+})
+
+describe('Encomendas no Vilarejo', () => {
+  it('sem bigorna os moradores esperam; com bigorna e sem pedido, avisa quanto falta', () => {
+    comEstado({ ...estadoInicial(0, 1), niveis: { mina: 1, carvoaria: 1, fornalha: 1, bigorna: 0, forno: 0 } })
+    expect(html(<EncomendasPanel />)).toContain('só batem à porta quando a bigorna estiver de pé')
+    comEstado({ ...meioDeJogo(), proximaEncomenda: 20 * 60_000 })
+    expect(html(<EncomendasPanel />)).toContain('Alguém deve aparecer em uns 20 min')
+  })
+
+  it('cartão com morador, fala, pedido, prazo, pagamento e botão de entregar', () => {
+    comEstado({ ...meioDeJogo(), encomendas: [pedidoAberto()] })
+    const saida = html(<EncomendasPanel />)
+    for (const texto of ['Sargento Amaro', 'sargento da guarda', '1 espada de ferro, incomum ou melhor', 'Vence em 3 h', 'No inventário: 1/1', 'Entregar', '1/3']) {
+      expect(saida, texto).toContain(texto)
+    }
+    expect(saida).toContain('aria-label="Entregar a encomenda de Sargento Amaro"')
+    expect(saida).not.toMatch(/disabled=""[^>]*aria-label="Entregar/)
+  })
+
+  it('sem os itens, o botão fica desligado e diz o que falta', () => {
+    comEstado({ ...meioDeJogo(), encomendas: [pedidoAberto({ quantidade: 3 })] })
+    const saida = html(<EncomendasPanel />)
+    expect(saida).toContain('Faltam itens')
+    expect(saida).toContain('No inventário: 1/3')
+    expect(saida).toMatch(/disabled=""[^>]*aria-label="Entregar a encomenda de Sargento Amaro"|aria-label="Entregar a encomenda de Sargento Amaro"[^>]*disabled=""/)
+  })
+
+  it('pedido vencido mostra "Venceu" e não deixa entregar', () => {
+    comEstado({ ...meioDeJogo(), lastTick: 5 * 3_600_000, encomendas: [pedidoAberto()] })
+    const saida = html(<EncomendasPanel />)
+    expect(saida).toContain('Venceu')
+    expect(saida).toContain('Faltam itens')
+  })
+
+  it('a dica das encomendas aparece uma vez e some depois de dispensada', () => {
+    comEstado({ ...meioDeJogo(), encomendas: [pedidoAberto()] })
+    expect(html(<EncomendasPanel />)).toContain('Entendi')
+    comEstado({ ...meioDeJogo(), encomendas: [pedidoAberto()], dicasVistas: ['encomendas'] })
+    expect(html(<EncomendasPanel />)).not.toContain('Entendi')
+  })
+})
+
+describe('Conquistas e ajustes', () => {
+  it('a Guilda tem o botão com a contagem', () => {
+    comEstado({ ...meioDeJogo(), conquistas: ['golem', 'primeiro_lingote'] })
+    const saida = html(<GuildaScreen />)
+    expect(saida).toContain('Conquistas e ajustes')
+    expect(saida).toContain('aria-label="Conquistas e ajustes, 2 de 16"')
+  })
+
+  it('a folha lista todas, marca as feitas e esconde as estatísticas até pedir', () => {
+    comEstado({ ...meioDeJogo(), conquistas: ['golem'] })
+    const saida = html(<ConquistasSheet onFechar={() => undefined} />)
+    for (const texto of ['Conquistas', '1/16', 'Golem derrotado', 'Primeiro lingote', 'Primeira lendária', 'Primeiro Reforjar', 'Na hora H', 'Ajustes', 'Som', 'desligado', 'role="dialog"']) {
+      expect(saida, texto).toContain(texto)
+    }
+    expect(saida).toContain('aria-label="Golem derrotado: desbloqueada"')
+    expect(saida).toContain('aria-label="Primeiro lingote: bloqueada"')
+    expect(saida).toContain('aria-expanded="false"')
+    expect(saida).not.toContain('Forjas com a batida')
+  })
+
+  it('o aviso de conquista fica no ar com texto acessível', () => {
+    comEstado(meioDeJogo(), { avisoConquistas: ['golem', 'serpe'] })
+    const saida = html(<ToastConquista />)
+    expect(saida).toContain('aria-live="polite"')
+    expect(saida).toContain('Conquista: Golem derrotado')
+    expect(saida).toContain('E mais 1.')
+    comEstado(meioDeJogo(), { avisoConquistas: [] })
+    expect(html(<ToastConquista />)).not.toContain('Conquista:')
+  })
+})
+
+describe('venda automática e primeira experiência', () => {
+  it('o interruptor mostra o estado e a dica aparece quando o inventário está enchendo', () => {
+    comEstado({ ...meioDeJogo(), autoVenda: false })
+    const desligada = html(<ItensPanel />)
+    expect(desligada).toContain('role="switch"')
+    expect(desligada).toContain('aria-checked="false"')
+    expect(desligada).toContain('Venda automática')
+    expect(desligada).not.toContain('Ligue a venda automática') // 2 de 30 itens: ainda cabe
+    comEstado({ ...meioDeJogo(), autoVenda: false, limiteInventario: 1 })
+    expect(html(<ItensPanel />)).toContain('Ligue a venda automática')
+    comEstado({ ...meioDeJogo(), autoVenda: true })
+    expect(html(<ItensPanel />)).toContain('aria-checked="true"')
+  })
+
+  it('a primeira tela ensina o primeiro passo, e a dica some ao dispensar', () => {
+    comEstado(estadoInicial(0, 1))
+    expect(html(<ForgeScreen />)).toContain('toque em Melhorar para cavar mais rápido')
+    comEstado({ ...estadoInicial(0, 1), dicasVistas: ['melhorar'] })
+    expect(html(<ForgeScreen />)).not.toContain('toque em Melhorar')
+  })
+
+  it('o resumo offline conta o que a venda automática vendeu e oferece ligá-la quando o inventário travou', () => {
+    const base: GameState = {
+      ...estadoInicial(0, 3),
+      niveis: { mina: 5, carvoaria: 5, fornalha: 5, bigorna: 3, forno: 0 },
+      recursos: { minerio: 1e4, carvao: 1e4, lingote: 1e3, aco: 0 },
+      automatico: true,
+      ultimaReceita: 'espada',
+      limiteInventario: 4,
+    }
+    const com = applyOffline({ ...base, autoVenda: true }, 3600 * 1000)
+    comEstado(com.estado)
+    expect(html(<OfflineModal resumo={com.resumo} onFechar={() => undefined} />)).toContain('A venda automática vendeu')
+    const sem = applyOffline({ ...base, autoVenda: false }, 3600 * 1000)
+    comEstado(sem.estado)
+    const saida = html(<OfflineModal resumo={sem.resumo} onFechar={() => undefined} />)
+    expect(saida).toContain('O inventário encheu')
+    expect(saida).toContain('Ligar a venda automática')
+  })
+})
+
+describe('aviso de nova versão', () => {
+  it('pergunta se quer recarregar e é um alerta para leitores de tela', () => {
+    const saida = html(<AvisoAtualizacao onRecarregar={() => undefined} onDepois={() => undefined} />)
+    expect(saida).toContain('Nova versão. Recarregar?')
+    expect(saida).toContain('role="alert"')
+    expect(saida).toContain('Recarregar</button>')
+    expect(saida).toContain('Depois</button>')
   })
 })

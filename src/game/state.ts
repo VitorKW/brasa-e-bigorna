@@ -6,6 +6,9 @@ import type { Expedicao } from './expedicoes.ts'
 import type { Heroi } from './herois.ts'
 import { FERREIROS, type Ferreiro, type FerreiroId } from './ferreiros.ts'
 import type { Item, MaterialId, ReceitaId, ResultadoBatida } from './items.ts'
+import type { ConquistaId } from './conquistas.ts'
+import type { Encomenda } from './encomendas.ts'
+import { estatisticasIniciais, type Estatisticas } from './estatisticas.ts'
 
 /** Pedido de forja (fila): a receita e o material escolhidos na hora de enfileirar. */
 export interface PedidoForja {
@@ -75,6 +78,23 @@ export interface GameState {
   talentos: TalentoId[]
   /** Quantas vezes já Reforjou. */
   reforjas: number
+
+  // Fatia 5
+  /** Pedidos abertos dos moradores (até 3). Zeram no Reforjar. */
+  encomendas: Encomenda[]
+  proximoIdEncomenda: number
+  /** Timestamp (ms) a partir do qual pode surgir outra encomenda. */
+  proximaEncomenda: number
+  /** Vende sozinho o que não melhora nenhum herói nem serve a uma encomenda (inventario.ts). */
+  autoVenda: boolean
+  /** Desbloqueadas, em ordem. Ficam para sempre. */
+  conquistas: ConquistaId[]
+  /** Contadores da vida toda: sobrevivem ao Reforjar. */
+  stats: Estatisticas
+  /** Som opcional (Web Audio), desligado por padrão. */
+  som: boolean
+  /** Dicas de primeira vez já dispensadas. */
+  dicasVistas: string[]
 }
 
 export const LIMITE_INVENTARIO_PADRAO = 30 // [suposição]
@@ -114,5 +134,13 @@ export function estadoInicial(now: number, rng = 20261109): GameState {
     brasas: 0,
     talentos: [],
     reforjas: 0,
+    encomendas: [],
+    proximoIdEncomenda: 1,
+    proximaEncomenda: 0,
+    autoVenda: false,
+    conquistas: [],
+    stats: estatisticasIniciais(),
+    som: false,
+    dicasVistas: [],
   }
 }

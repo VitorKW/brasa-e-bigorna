@@ -8,6 +8,7 @@ import {
 } from '../game/construcoes.ts'
 import { formatar, formatarCusto } from '../game/format.ts'
 import { useGame } from '../store.ts'
+import { EncomendasPanel } from './EncomendasPanel.tsx'
 import { Sprite } from './Sprite.tsx'
 
 function CartaoConstrucao({ id }: { id: ConstrucaoId }) {
@@ -100,13 +101,7 @@ export function VilarejoScreen() {
         </ul>
       </section>
 
-      <section className="secao painel encomendas" aria-label="Encomendas">
-        <div className="secao-topo">
-          <h2>Encomendas</h2>
-          <span className="secao-contagem">em breve</span>
-        </div>
-        <p className="estacao-dica">Os moradores vão bater à porta com pedidos. Por enquanto, a forja é toda sua.</p>
-      </section>
+      <EncomendasPanel />
     </>
   )
 }

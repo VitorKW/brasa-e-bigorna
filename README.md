@@ -1,185 +1,202 @@
 # Brasa & Bigorna
 
-RPG idle + tycoon mobile (PWA) sobre uma forja de vilarejo de fronteira. Veja o `GDD.md` para a visão completa.
-Estado atual: **Fatia 4** (Serpe de Cinza, construções do vilarejo, Reforjar e árvore de talentos),
-sobre a Fatia 3 (heróis, equipamento, expedições, o Golem de Escória, a Serra Cinzenta e o Forno de aço),
-a Fatia 2 (Bigorna, itens com qualidade, minigame da batida e ferreiros) e a Fatia 1
-(Mina, Carvoaria, Fornalha, venda, idle, progresso offline, save e simulador).
+Um jogo idle + tycoon + RPG para o celular, feito como PWA. Você herda uma forja abandonada num vilarejo de fronteira: ela trabalha
+sozinha enquanto você decide o que melhorar, o que forjar e quem equipar. Os heróis que usam suas armas derrubam os chefes da região
+e, quando o vilarejo vira cidade, você reforja tudo e recomeça mais forte.
+
+**Para quem avalia este repositório.** É um projeto de portfólio com um objetivo técnico claro: regras de jogo como funções puras e
+testadas, um simulador que joga o jogo para calibrar o balanceamento e um PWA que abre offline. O jogo roda sem backend, em
+React 18 + TypeScript + Vite, com estado em Zustand e save no `localStorage`.
+
+| Forja | Guilda | Mapa |
+|---|---|---|
+| ![A cadeia de estações: mina, carvoaria, fornalha, bigorna](docs/screens/forja.jpg) | ![Heróis e equipamento](docs/screens/guilda.jpg) | ![Expedições e chefes](docs/screens/mapa.jpg) |
+
+| Vilarejo e encomendas | Combate com replay | Reforjar |
+|---|---|---|
+| ![Construções e pedidos dos moradores](docs/screens/vilarejo.jpg) | ![Replay do combate contra a Serpe de Cinza](docs/screens/combate.jpg) | ![Prévia do Reforjar e talentos](docs/screens/reforjar.jpg) |
+
+## O jogo em um minuto
+
+1. **Forja.** Mina e carvoaria produzem, a fornalha funde lingotes, a bigorna transforma lingotes em armas, escudos, elmos e armaduras de
+   cinco qualidades (comum a lendário). O gargalo da cadeia fica destacado. Um minigame opcional de 3 s (a batida) encurta o caminho para
+   a qualidade alta, mas o modo automático sempre avança.
+2. **Guilda e Mapa.** Recrute heróis, equipe-os com o que você forjou e mande-os em expedições. O resultado é sorteado na partida; a volta
+   é decidida pelo relógio, também com o app fechado. Os chefes (Golem de Escória, Serpe de Cinza) são combates por rodadas, calculados na
+   hora, com previsão exata antes de lutar e replay animado.
+3. **Vilarejo.** A reputação libera cinco construções (pagas com moedas). Oito moradores fazem encomendas: "2 espadas de ferro, incomuns ou
+   melhores, em 3 h", pagas com 1,5 vez o valor e reputação.
+4. **Reforjar.** Com a Muralha, o vilarejo vira cidade: tudo zera, você ganha Brasas Ancestrais e compra talentos permanentes.
+5. **Sempre.** Fechar o app não para nada (produção offline com teto de 2 a 12 h), e cada abertura mostra o que aconteceu enquanto você
+   estava fora. Conquistas, estatísticas locais, venda automática e som opcional completam o MVP.
+
+Visual: a escala de calor do metal é informação (cinza frio = parado, laranja = trabalhando), painéis de aço, Barlow e Barlow Condensed,
+sem caixa alta, sem emoji como ícone, um único momento animado por tela. Mobile-first, retrato, alvos de toque de 48 px, sem monetização.
 
 ## Como rodar
 
 ```bash
 npm install
 npm run dev        # servidor de desenvolvimento
-npm test           # testes (Vitest)
+npm test           # Vitest: regras, save, simulador e renderização de telas
 npm run typecheck  # tsc em modo strict
-npm run build      # tsc -b && vite build
-npm run sim        # simulador: 2 h contínuas e, depois, a sim de dias (~20 s)
+npm run build      # tsc -b && vite build (gera dist/ com o service worker)
+npm run preview    # serve o dist/: é aqui que o PWA se instala e funciona offline
+npm run sim        # simulador: 2 h contínuas e a sim de dias (~20 s)
 npm run sim -- 8   # só a sim contínua, 8 h
 npm run sim -- dias # só a sim de dias (até o 2º Reforjar)
 ```
 
-Requer Node 22.18 ou superior.
+Requer Node 22.18 ou superior (o Node remove os tipos do TypeScript sozinho, por isso `scripts/sim.ts` roda sem `tsx` nem build).
 
 ## Arquitetura
 
 ```
-src/game/        Regras do jogo: funções puras, sem React, sem relógio, sem I/O
-  constants.ts   Todas as curvas do GDD §4.2 (custos, produção, marcos, preços)
-  state.ts       GameState serializável (version + lastTick)
-  tick.ts        tick(state, dt): produção e fornalha com gargalo
-  offline.ts     applyOffline(state, now): teto de 2 h, passos de 10 s, resumo
-  economy.ts     comprarUpgrade e vender
-  rng.ts         mulberry32: sorteio determinístico com o estado guardado no save
-  items.ts       tipos, receitas, qualidade (Q), valor e nomes dos itens
-  bigorna.ts     tarefa de forja, fila, modo automático, minigame, conclusão do item
-  batida.ts      avaliarBatida(posição, zonas) e posição do marcador
-  ferreiros.ts   contratar, alocar, XP e passivas
-  herois.ts      classes, atributos, XP, equipar/desequipar e recrutamento
-  expedicoes.ts  chance, loot, partir (sorteio gravado na partida) e coletar
-  chefe.ts       combate determinístico por rodadas (devolve o log) e o Golem
-  inventario.ts  venda individual e em massa por qualidade
-  chain.ts       taxas e análise de gargalo (usadas pela UI e pelo sim)
-  construcoes.ts as 5 obras do vilarejo (reputação + moedas)
-  talentos.ts    a árvore de 12 nós (3 ramos, 4 tiers) e a compra com brasas
-  bonus.ts       todos os multiplicadores permanentes (brasas, talentos, construções) num só lugar
-  reforjar.ts    brasas, prévia e o Reforjar (prestígio)
-  save.ts        validação e migração de save por versão
-  format.ts      números grandes em pt-BR (1,2 K, 3,4 M, ...)
-  sim.ts         simulador guloso
-src/store.ts     Zustand: liga as regras ao localStorage e ao relógio
-src/components/  UI (React + motion/react)
-scripts/sim.ts   Entrada de `npm run sim`
+src/game/        Regras do jogo: funções puras, sem React, sem relógio, sem Math.random, sem I/O
+  constants.ts   Curvas do GDD §4.2 (custos, produção, marcos, preços) e SAVE_VERSION
+  state.ts       GameState serializável
+  rng.ts         mulberry32: o estado do gerador mora no GameState
+  tick.ts        tick(state, dt): produção, fornalha com gargalo, forno, bigorna e venda automática
+  offline.ts     applyOffline(state, now): passos de 10 s, teto de horas, resumo
+  items.ts, bigorna.ts, batida.ts, ferreiros.ts       itens com qualidade, forja, minigame, passivas
+  herois.ts, expedicoes.ts, chefe.ts                   heróis, expedições e combate com log
+  construcoes.ts, talentos.ts, bonus.ts, reforjar.ts   vilarejo, árvore de 12 nós, multiplicadores, prestígio
+  encomendas.ts  8 moradores, sorteio, prazo, entrega
+  conquistas.ts, estatisticas.ts                       16 conquistas e os contadores que elas leem
+  inventario.ts  venda manual e automática (por utilidade)
+  save.ts        validação e migrações v1 -> v5
+  sim.ts         simulador guloso (usa as mesmas funções do jogo)
+src/store.ts     Zustand: liga as regras ao localStorage, ao relógio e ao áudio
+src/components/  UI (React + motion/react); Sprite.tsx cai para um placeholder se o PNG não existir
+src/pwa.ts       registro do service worker e aviso de versão nova
+pwa/             modelo do service worker
+scripts/         sim.ts (npm run sim) e o plugin do Vite que gera o sw.js
+art/             arte como código (pxl) -> public/sprites/*.png
 ```
 
-**Por que regras puras em `src/game`?** Uma função pura (mesma entrada, mesma saída, sem efeitos) é trivial de testar,
-roda igual no navegador, no Vitest e no Node (é assim que o simulador reutiliza o jogo inteiro sem abrir uma aba).
-A UI só lê o estado e chama essas funções.
+**Por que regras puras em `src/game`?** Uma função pura (mesma entrada, mesma saída, sem efeitos) é trivial de testar e roda igual no
+navegador, no Vitest e no Node. É assim que o simulador reutiliza o jogo inteiro sem abrir uma aba, e é por isso que cada regra tem
+teste unitário. A UI só lê o estado e chama essas funções; o relógio (`Date.now`) e o sorteio inicial entram pela store.
 
-**Por que o offline roda em passos de 10 s?** Porque a produção depende de estoque: se a mina para de render ou o carvão
-acaba no meio da ausência, um único cálculo `taxa × tempo` erraria. Em passos, o gargalo é respeitado a cada intervalo
-(e o mesmo `tick` serve para online e offline). O tempo é limitado a 2 h e um relógio que voltou no tempo é ignorado
-sem punir o jogador.
+## Decisões técnicas, por fatia
 
-**Por que `number` e não `bigint`?** Os valores do MVP ficam muito abaixo de 1e15, onde o `double` ainda é exato para o que
-mostramos. `bigint` não aceita frações (produção de 0,5/s) e complicaria todas as fórmulas. O teste do simulador falha se
-algum valor passar de 1e15; nesse dia trocamos por `break_infinity.js`.
+**Fatia 1: offline em passos.** A produção depende de estoque: se a mina para ou o carvão acaba no meio da ausência, um único cálculo
+`taxa × tempo` erraria. `applyOffline` simula em passos de 10 s com o mesmo `tick` do jogo online, respeitando gargalos, com teto de
+horas (2 h, até 12 h com construção e talentos). Relógio que voltou no tempo é ignorado sem punir. Números são `number`, não `bigint`
+(a produção tem frações); o teste do simulador falha se algum valor passar de 1e15, o dia de trocar por `break_infinity.js`.
 
-**Save:** `localStorage` com a chave `brasa-e-bigorna:save` (e um backup do save anterior). Grava a cada 5 s e quando a aba
-fica oculta. O formato tem `version`; `src/game/save.ts` tem o registro de migrações (v1 -> v2 -> v3 -> v4, cada uma com teste) e valida o
-formato atual (herói com item no espaço errado ou expedição de herói inexistente não corrompem o resto do save).
+**Fatia 2: RNG no estado e resultado sorteado antes.** O gerador (mulberry32) vive em `GameState.rng`; cada sorteio devolve
+`{ valor, rng }` e quem chama grava o novo estado. Nada nas regras usa `Math.random`, então sim e testes são reproduzíveis. A qualidade
+aleatória, o alvo do minigame e o sorteio da segunda peça são gravados **quando a tarefa começa**: fechar o app com o minigame aberto
+vale o bônus automático, sem segunda chance. A bigorna trabalha por tarefas (progresso, fila, modo automático), não por taxa.
 
-## Decisões da Fatia 2
+**Fatia 3: combate determinístico com replay e expedição sorteada na partida.** `simularCombate` não sorteia nada: dano
+`max(1, ATQ × 100 / (100 + DEF))`, ordem por VEL, até 30 rodadas, e devolve o log de golpes. A previsão da UI é a mesma função rodando
+antes de lutar; o replay só reproduz o log (e vai direto ao resultado com `prefers-reduced-motion`). A expedição sorteia sucesso, fragmento
+e loot ao partir e grava o horário de volta: reabrir o app não rerrola, e a volta é só comparar timestamps.
 
-**RNG com semente no estado, nunca `Math.random` nas regras.** O gerador (mulberry32, 32 bits) vive em `GameState.rng`.
-Cada sorteio devolve `{ valor, rng }` e quem chama grava o novo `rng`. Assim o sim e os testes são reproduzíveis e o
-sorteio fica salvo. (`Math.random` aparece só na store, uma vez, para escolher a semente de um jogo novo.)
+**Fatia 4: bônus em um lugar, prestígio puro, migrações.** `bonus.ts` reúne todos os multiplicadores (brasas, talentos, construções);
+as funções de produção, venda e expedição o consultam, e cada talento tem teste na função que muda. `reforjar(estado, agora)` é pura e
+devolve o mesmo estado quando algo bloqueia. A reputação das expedições tem retorno decrescente (`15 × horas^0,5 / (1 + reputação/1000)`)
+em vez de teto diário, porque um teto diário exigiria um relógio de dia, que o jogo evita por causa de quem adianta o relógio.
+`save.ts` tem um registro de migrações testadas (v1 -> v5) e valida o formato atual descartando o que não reconhece, sem corromper o resto.
 
-**Minigame da batida à prova de "fecha o app e tenta de novo".** Ao começar uma tarefa, `iniciarTarefa` sorteia e GRAVA
-tudo de uma vez: o aleatório da qualidade (0..20), a posição do alvo da batida e o sorteio de 10 % da Iara. O minigame só
-soma um bônus (+5 automático ou errou, +10 bom, +20 perfeito) ao que já foi sorteado; ele nunca rerrola nada. Se o jogador
-fecha o app com o overlay aberto, `applyOffline` converte o minigame pendente em "feito, automático": sem segunda chance.
-"Forjar com batida" é opt-in por item e só vale com a bigorna livre (não entra na fila), então o overlay nunca surge sozinho.
+**Fatia 5: encomendas, conquistas e venda automática.**
+- *Encomendas.* Sorteadas pelo RNG do estado e gravadas com prazo em timestamp; o pedido acompanha o progresso (aço só depois do forno,
+  qualidade limitada ao que a bigorna entrega com 50 % de chance). Vencida, some sem punição.
+- *Conquistas.* 16 funções puras do estado, conferidas a cada tick; os contadores (`stats`) sobrevivem ao Reforjar.
+- *Venda automática.* A saída para o inventário de 30 itens que travava a bigorna offline: vende o que não melhora nenhum herói nem serve
+  a uma encomenda. Por utilidade, e não por raridade, porque depois do aço quase tudo é raro ou melhor.
+- *Recalibração.* A venda automática multiplicou por 2,8 a renda do 1º dia (14,8 M para 41,8 M); o simulador mostrou, e Taverna, Mercado, Muralha e
+  Serpe foram reajustados (GDD §4.2, "Notas da fatia 5").
 
-**Reduced motion no minigame.** O marcador continua se movendo, mas bem mais devagar (ida e volta em 3,6 s em vez de
-1,4 s), sem faíscas e sem número subindo. Escolhi isso em vez de um "alvo fixo que pisca" porque piscar é pior para quem
-tem sensibilidade a flashes, e o timing (a habilidade do minigame) continua existindo. Os 3 s e as zonas são iguais; só a
-velocidade muda. Também dá para bater com Espaço ou Enter, e o "perfeito" vibra 15 ms quando o aparelho suporta.
+**Sim guloso de balanceamento.** `simular(horas, passo, opções)` joga o jogo com uma estratégia simples (compra a opção de melhor retorno por
+moeda, aloca ferreiros por força bruta, entrega encomendas, equipa o melhor kit, luta quando a previsão dá vitória) e mede os marcos. Com
+um padrão de jogador por dias (2 h sem parar no começo de cada ciclo, depois 5 min de sessão a cada 90 min, 8 h de sono, o resto offline
+pela `applyOffline` de verdade) ele reproduz uma semana de jogo e é a fonte dos números de balanceamento. Quando uma meta falha, a regra
+é ajustar a constante em `constants.ts` ou no módulo da regra e registrar o motivo no GDD, nunca afrouxar o teste.
 
-**A bigorna trabalha por tarefas, não por taxa.** Mina, carvoaria e fornalha produzem por segundo; a bigorna tem uma
-`Forja` em andamento (progresso 0..1), uma fila (até 5) e o modo automático. `tickDetalhado` fatia passos grandes
-(offline: 10 s) em subpassos de 1 s quando a bigorna existe, para ela não perder tempo esperando lingotes. Offline não tem
-minigame (bônus automático) e o inventário cheio para a bigorna.
+**Arte como código.** Os sprites são escritos em `art/*.px.js` com o `pxl-pixel-art` (paleta compartilhada em `art/paleta.px.js`) e
+exportados para `public/sprites/`. O componente `Sprite` usa o PNG quando existe e cai para um quadrado da paleta com a inicial quando não,
+então o jogo roda mesmo sem a arte.
 
-**Save v2.** `MIGRACOES[1]` leva o save da Fatia 1 para a v2 (bigorna no nível 0, inventário vazio, ferreiros por contratar,
-semente derivada do último tick). `validarEstado` rejeita itens ou ferreiros malformados e corrige postos inválidos.
+## Testes e simulador
 
-**Bug da Fatia 1 corrigido.** O primeiro clique em "Vender tudo" logo depois de fechar o modal offline era engolido pelo
-fundo do modal, que continuava na tela durante a animação de saída. Agora o fundo usa `pointer-events: none` assim que
-começa a sair (`useIsPresent` do motion). Não há teste automático para isso (não temos navegador nos testes); vale conferir
-no celular.
+`npm test` roda 384 testes em ~25 s: regras puras, migrações de save, o simulador (que falha se uma meta de ritmo sair da faixa),
+renderização das telas no servidor (`renderToString`), contraste de cores e regras de CSS de acessibilidade, o service worker gerado e a
+store.
 
-## Decisões da Fatia 3
+Metas de ritmo do GDD §4.4 e o que o `npm run sim` mede (passo de 1 s):
 
-**Combate determinístico, com log.** `simularCombate` (`src/game/chefe.ts`) não sorteia nada: dano = `max(1, ATQ × 100 / (100 + DEF))`,
-ordem por VEL (empate: herói antes do chefe), até 30 rodadas, o chefe bate no primeiro herói vivo da formação (maior DEF na
-frente). Devolve um log de golpes (quem, em quem, dano, PV restante). Por isso a "previsão" da UI não é uma estimativa: é a
-mesma função rodando antes de lutar. O replay de ~6 s só reproduz o log (passo = tempo total / número de golpes, entre 35 e
-450 ms); com `prefers-reduced-motion` vai direto para o resultado. Derrota não custa nada.
+| Marco | Meta | Resultado |
+|---|---|---|
+| Primeira compra | < 15 s | 2,8 s |
+| Maior intervalo sem comprar nada | ≤ 10 min | 4 min |
+| Bigorna liberada | 3 a 8 min | 5 min |
+| Primeiro herói | 5 a 15 min | 10 min |
+| Golem de Escória | 15 a 40 min | 24 min |
+| Segundo herói (150 de reputação) | 30 a 60 min | 42 a 46 min |
+| Primeiro épico de ferro | 1 h 30 a 2 h 45 | 2 h 12 min |
+| Épicos de ferro nas 3 primeiras horas | < 10 % dos itens de ferro | 8,4 % |
+| Lendário de ferro no automático | nenhum em 3 h | nenhum |
+| Serpe de Cinza | 18 a 30 h | 24 h 4 min, 29 rodadas |
+| Reputação 1 000 | perto da Serpe | 24 h 4 min |
+| Muralha | até ~12 h depois da Serpe | 31 h 30 min (7 h 30 depois) |
+| Primeiro Reforjar | 2 a 4 dias, 5 a 15 brasas | 52 h 30 min, 13 brasas |
+| Segundo ciclo | ≤ 60 % do primeiro | 46 % (24 h contra 52 h 30 min) |
 
-**Resultado da expedição sorteado na partida.** `partir` sorteia (RNG com semente do estado) o sucesso, o fragmento e já calcula o
-loot final (falha = 30 % de moedas e XP, sem reputação nem fragmento), e grava tudo na expedição com o horário de volta. A volta é
-só `agora >= fim`: funciona com o app fechado e fechar e reabrir não rerrola nada. O teto offline de 2 h vale para a produção, não
-para expedições. O loot espera um toque em "Coletar" (decisão de game feel; o resumo offline avisa quem voltou).
+O resultado do 2º Reforjar com 15 brasas e a sensibilidade da data da Taverna (que salta entre 24 h e ~30 h conforme o passo da sim)
+estão documentados no GDD.
 
-**1 herói por expedição, grupo só para o chefe.** Expedições simultâneas = número de heróis. O chefe luta com todos os heróis livres
-que o jogador marcar.
+## PWA
 
-**Recrutamento sem encomendas.** O 1º herói é comprado (3 500 moedas, achado pelo sim para ~10 min); expedições bem-sucedidas dão
-5 a 15 de reputação, que abre o 2º herói em 150; o Golem abre o 3º; o 4º espera a Taverna (fatia 4). Detalhes e alternativas no GDD §9.
+- **Instalável:** `manifest.webmanifest` (nome, cores da paleta, `standalone`, retrato, ícones 192, 512 e maskable) e `apple-touch-icon`.
+- **Offline:** service worker **escrito à mão** (`pwa/sw.modelo.js`, cerca de 90 linhas). Escolhi isso em vez do `vite-plugin-pwa`
+  (que já suporta o Vite 8) porque o app tem uma tela só e nenhuma rota: o workbox traria centenas de pacotes para resolver um problema que
+  cabe em 90 linhas legíveis. Um plugin do Vite (`scripts/pwa-plugin.ts`) grava `dist/sw.js` com a lista de todos os arquivos do build e
+  uma versão que é o hash do conteúdo, então um sprite redesenhado também invalida o cache.
+- **Estratégia:** cache-primeiro para o app e os sprites; fontes do Google com revalidação em segundo plano.
+- **Atualização:** o service worker novo espera; o app mostra "Nova versão. Recarregar?" e só troca quando você aceita. O save fica no
+  `localStorage`, que a atualização não toca, e o app grava antes de recarregar.
+- **Cuidado com `Vary`:** o cache é consultado com `ignoreVary`. O servidor pode responder com `Vary: Origin`, e o script `type=module`
+  é pedido com cabeçalho `Origin`, diferente do download da instalação; sem isso o app abria em branco offline (achado no teste
+  com o servidor desligado, e coberto por teste).
+- **Registro:** feito num `useEffect`, que pode rodar depois do `load`; por isso registra na hora se a página já carregou.
+- Para testar: `npm run build && npm run preview`, abrir no Chrome, conferir em DevTools > Application e desligar a rede.
 
-**Elmo com espaço próprio** (4 espaços de equipamento) e atributos de item = `base × multQualidade × multMaterial`.
+## Acessibilidade
 
-**Forno de aço.** Uma estação a mais na cadeia (`tick.ts`): pega lingotes de ferro e carvão que sobraram da fornalha e para com 60 de
-aço parado. A bigorna ganhou a escolha de material; a fila e o modo automático guardam o material. Produz offline como as outras.
+Foco visível (`:focus-visible`), alvos de toque de 48 px, contraste mínimo de 4,5:1 conferido por teste para todas as cores de texto da paleta
+(a cor de qualidade nunca é o único sinal: o nome vem escrito), `aria-*` em diálogos, interruptores (`role="switch"`), barras de progresso e
+avisos, e `prefers-reduced-motion` respeitado em sprites animados, replay, minigame, avisos e partículas. Há dicas curtas e dispensáveis na
+primeira vez de cada mecânica, sem tutorial que bloqueie a tela.
 
-**Save v3.** `MIGRACOES[2]` acrescenta forno, aço, material na fila, heróis, expedições, reputação, fragmentos e chefes derrotados.
+## Limitações conhecidas
 
-## Decisões da Fatia 4
+- **Relógio do celular.** Sem servidor, não há como saber a hora de verdade. O teto offline limita a produção e um relógio que volta é
+  ignorado, mas adiantar o relógio faz as expedições voltarem antes (o dano é limitado: o loot é pequeno perto da produção).
+- **Save só local.** `localStorage` com backup do save anterior; limpar os dados do navegador apaga o jogo. Não há sincronização.
+- **Fontes.** O Barlow vem do Google Fonts: na primeira visita é preciso estar online; depois ficam em cache. Sem elas o jogo usa a fonte
+  do sistema.
+- **Sem navegador nos testes.** Os testes de interface renderizam no servidor; service worker, instalação, toque e desempenho precisam ser
+  conferidos à mão no celular.
+- **Fragilidade do balanceamento.** A data da Serpe depende da moeda chegar antes ou depois das 16 h acordado de cada dia da sim; ela
+  salta entre 24 h e ~30 h com pequenas mudanças de preço (GDD §4.2).
+- **Números.** `number` (double) até ~1e15.
 
-**Reputação com retorno decrescente.** A reputação de um sucesso era `5 + 10 × min(1, h/4)` e a Trilha de 2 min rendia 765 em
-2 h. Agora é `17 × horas^0,5 / (1 + reputação/1 000)` (`reputacaoDe` em `expedicoes.ts`): a raiz tira a vantagem das expedições
-curtas e o divisor desacelera quem já tem muita. Não usei teto diário porque o jogo não tem (nem quer) um relógio de dia: ele já
-se defende de relógio adiantado (GDD §4.5). Os números K = 17 e R = 1 000 saíram do sim.
+## Próximos passos (V2 do GDD)
 
-**Bônus em um lugar só.** `bonus.ts` reúne os multiplicadores (brasas, talentos, construções) e as funções que já existiam (`taxas`,
-`tempoForjaAtual`, `vender`, `applyOffline`, `chanceSucesso`, `proximaVaga`...) chamam esse módulo. A UI e o sim leem os mesmos números,
-e cada talento tem teste na função que ele muda. O teto offline virou `tetoOfflineSegundos(estado)` (2 h + Armazém + talentos, máximo 12 h).
-
-**Reforjar é uma função pura.** `reforjar(estado, agora)` devolve o estado novo (ou o MESMO estado, se algo bloqueia: sem Muralha, sem
-brasa para ganhar, herói na estrada). A prévia (`previaReforjar`) é a mesma conta. A UI pede dois passos (preparar e segurar 1,5 s, com ponteiro
-ou Enter/Espaço) e só então chama a store, que grava o save na hora. O que zera e o que fica está no GDD §4.2.
-
-**Talentos que valem na hora.** "Bigorna de herança" não espera o próximo Reforjar: `comprarTalento` sobe a bigorna ao piso 5 na compra
-(`aplicarPiso`) e o Reforjar aplica o mesmo piso.
-
-**Serpe de Cinza.** Mesma função de combate do Golem (`simularCombate`), com `exige: 'golem'` e `chefeDisponivel`. O PV subiu de 25 000
-para 33 000 por causa do sim: com 25 000 ela caía às 3 h; com 33 000 só 4 heróis equipados vencem, então a data depende do preço da Taverna.
-
-**Save v4.** `MIGRACOES[3]` acrescenta `construcoes`, `brasas`, `talentos` e `reforjas` e não toca no resto; `validarEstado` descarta ids
-desconhecidos e repetidos. `moedasGanhas` passou a significar "moedas do ciclo" e zera no Reforjar.
-
-## Simulador (`npm run sim`)
-
-Fatia 4: o sim também joga **dias**. `simular(horas, passo, { padrao, brasasAlvo, pararEmReforjas })` aceita um padrão de jogador
-(`PADRAO_REALISTA`): as primeiras 2 h de cada ciclo sem parar; depois 16 h acordado por dia com 5 min de sessão a cada 90 min, o resto
-offline pela `applyOffline` de verdade (com o teto, sem comprar nem vender nada) e 8 h de sono. O sim constrói o vilarejo, derrota a Serpe,
-Reforja com 7 brasas e compra talentos por uma lista fixa. `src/game/sim.dias.test.ts` falha se Serpe, reputação, construções, primeiro
-Reforjar (2 a 4 dias, 5 a 15 brasas) ou segundo ciclo (≤ 60 %) saírem da faixa, e se algum valor passar de 1e15. O passo do sim de dias
-nos testes é de 1 s (com 2 s a Taverna às vezes sai um dia depois; ver GDD §4.2). A suíte inteira roda em ~25 s.
-
-## Simulador das fatias 1 a 3
-
-`scripts/sim.ts` roda direto com `node scripts/sim.ts`: o Node 22.18+ remove os tipos TypeScript sozinho, então não precisa
-de `tsx` nem de build. A única regra é escrever os imports com a extensão (`./tick.ts`).
-
-O simulador joga N horas com a estratégia gulosa: compra sempre a melhor opção em ganho de renda por moeda (upgrades das 4
-estações e contratação de ferreiros, com a alocação ótima achada por força bruta), roda a bigorna em modo automático com a
-receita de melhor valor por segundo, vende os itens e o excedente de lingotes, minério e carvão. Não usa o minigame (pior
-caso). Na Fatia 3 ele também poupa e contrata o 1º herói, guarda e equipa os melhores itens, manda expedições (a de maior
-valor por hora com chance >= 70 %), luta com o Golem quando a previsão dá vitória e depois compra o Forno de aço e forja em aço. Imprime primeira compra, nível 10 de cada estação, bigorna desbloqueada, primeiro item incomum/raro/épico/lendário,
-primeiro ferreiro, primeiro herói, primeira expedição, Golem derrotado, Forno de aço comprado, primeiro lingote de aço,
-primeiro lendário (de ferro e de aço), maiores intervalos sem compra e moedas/s em 5 min, 20 min e 1 h. As metas de ritmo do GDD §4.4 (inclusive
-"bigorna entre 3 e 8 min") são testes em `src/game/sim.test.ts`. Se falharem, ajuste as constantes em `constants.ts` (não o teste) e registre no GDD §4.2.
+- Região 3 e um terceiro material.
+- Encantamento com fragmentos rúnicos (hoje acumulam sem sumidouro).
+- Ponte com o app de treino Forja: código diário que dá "Fôlego" (+20 % de produção por 2 h), com um desafio diário equivalente dentro do jogo.
+- Capacitor (Android) e sincronização do save na nuvem.
+- Coleta automática do loot de expedição na abertura do app, se virar atrito para quem joga pouco.
 
 ## Arte
 
-Os sprites finais ficam em `public/sprites/` (`mina.png`, `carvoaria.png`, `fornalha.png` 32x32, `fornalha_acesa.png`
-128x32 com 4 quadros, `icone_*.png` 16x16). A Fatia 2 usa também `bigorna.png` (32x32), `bigorna_batendo.png` (128x32, 4
-quadros), `item_<tipo>_<material>.png` (16x16) e `ferreiro_<id>.png` (24x24). A Fatia 3 usa `heroi_<classe>.png` (24x24, classes
-`guerreiro`, `guardia`, `batedor`), `heroi_<classe>_andando.png` (96x24, 4 quadros), `chefe_golem.png` (48x48), `forno_aco.png`
-(32x32), `forno_aco_aceso.png` (128x32, 4 quadros), `icone_lingote_aco.png`, `icone_fragmento.png`, `icone_reputacao.png`
-(16x16) e `regiao_vale.png`, `regiao_serra.png` (banners de 96x32). A Fatia 4 usa `chefe_serpe.png` (48x48),
-`construcao_<id>.png` (32x32; `segunda_fornalha`, `armazem`, `taverna`, `mercado`, `muralha`), `icone_brasa.png` (16x16) e
-`talento_<ramo>.png` (16x16; `fornalheiro`, `mestre`, `capitao`). Enquanto não existirem, o componente `Sprite` mostra um quadrado da paleta
-com a inicial.
+Os sprites finais ficam em `public/sprites/`: estações de 32x32 (`mina`, `carvoaria`, `fornalha`, `forno_aco`, `bigorna`; versões `_aceso` e
+`_batendo` em faixas de 4 quadros), ícones de 16x16 (`icone_*`, `item_<tipo>_<material>`, `talento_<ramo>`, `icone_conquista`), retratos de
+24x24 (`ferreiro_<id>`, `heroi_<classe>` e `_andando`, `npc_<id>` dos oito moradores), chefes de 48x48 (`chefe_golem`, `chefe_serpe`),
+`construcao_<id>` de 32x32 e banners de região de 96x32. Os ícones do app ficam em `public/icons/` e saem da mesma arte (`app_icone*` em `art/fatia5.px.js`), ampliada sem suavizar por
+`node scripts/gerar-icones.ts`. Enquanto um PNG não existe, o `Sprite`
+mostra um quadrado da paleta com a inicial.

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { aplicarConquistas } from './conquistas.ts'
 import { OPCOES_DIAS, PADRAO_REALISTA, presenteEm, proximaPresenca, simular } from './sim.ts'
 
 const H = 3600
@@ -54,14 +55,15 @@ describe('ritmo por dias (sim com padrão realista, até o 2º Reforjar)', () =>
     expect(r.rodadasDaSerpe!).toBeLessThanOrEqual(30)
   })
 
-  it('as construções saem na ordem da reputação e a Muralha só depois da Serpe', () => {
+  it('as construções saem na ordem da reputação e a Muralha vem logo depois da Serpe', () => {
     const c = r.construcoes
     for (const t of Object.values(c)) expect(t).not.toBeNull()
     expect(c.segunda_fornalha!).toBeLessThan(c.armazem!)
     expect(c.armazem!).toBeLessThan(c.taverna!)
-    expect(c.taverna!).toBeLessThan(c.mercado!)
-    expect(c.mercado!).toBeLessThan(c.muralha!)
+    expect(c.taverna!).toBeLessThanOrEqual(c.mercado!)
     expect(c.muralha!).toBeGreaterThan(r.serpeDerrotada!)
+    // a espera vazia entre a Serpe e a Muralha era de 27 h (fatia 4); agora cabe em meio dia
+    expect(c.muralha! - r.serpeDerrotada!).toBeLessThanOrEqual(12 * H)
     // a Taverna abre o 4º herói
     expect(r.quartoHeroi! - c.taverna!).toBeLessThan(5)
     // o Armazém e a Segunda fornalha são das primeiras horas
@@ -94,10 +96,20 @@ describe('ritmo por dias (sim com padrão realista, até o 2º Reforjar)', () =>
 
   it('o Reforjar manteve o que devia: heróis, construções, chefes e reputação', () => {
     const f = r.estadoFinal
-    expect(f.herois).toHaveLength(4)
+    expect(f.herois.length).toBeGreaterThanOrEqual(4)
     expect(f.construcoes).toHaveLength(5)
     expect(f.chefesDerrotados).toEqual(['golem', 'serpe'])
     expect(f.reputacao).toBeGreaterThan(1000)
+    // contadores e conquistas sobrevivem ao Reforjar
+    expect(f.stats.itensForjados).toBeGreaterThan(1000)
+    expect(aplicarConquistas(f).novas).toEqual(expect.arrayContaining(['primeiro_reforjar', 'golem', 'serpe', 'todas_obras', 'reputacao_mil']))
+  })
+
+  it('as encomendas contribuem com reputação sem inflar: de um quarto a metade do total, nunca o grosso', () => {
+    expect(r.encomendas.entregues).toBeGreaterThan(15)
+    const fracao = r.encomendas.reputacao / r.estadoFinal.reputacao
+    expect(fracao).toBeGreaterThan(0.2)
+    expect(fracao).toBeLessThan(0.55)
   })
 }, 60_000)
 

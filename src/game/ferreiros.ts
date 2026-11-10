@@ -36,7 +36,7 @@ export const FERREIRO = {
   custoBase: 100,
   custoTaxa: 4,
   xpBase: 10,
-  xpTaxa: 1.65, // ajustado pelo sim: com 1,3 o épico saía aos 33 min
+  xpTaxa: 1.7, // ajustado pelo sim: com 1,3 o épico saía aos 33 min; 1,65 -> 1,7 na fatia 5 (ver GDD §4.2)
   /** Nível máximo do ferreiro (GDD §4.2: níveis 1–20). */
   nivelMax: 20,
   bonusTito: 0.15,
@@ -136,7 +136,7 @@ export function passivasBigorna(s: GameState): {
   }
 }
 
-/** XP para sair do nível n: 10 × 1,65^(n−1). */
+/** XP para sair do nível n: 10 × 1,7^(n−1). */
 export function xpParaProximo(n: number): number {
   return FERREIRO.xpBase * Math.pow(FERREIRO.xpTaxa, n - 1)
 }

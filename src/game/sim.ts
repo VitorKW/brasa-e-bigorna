@@ -24,10 +24,11 @@ import {
   type EstacaoProducao,
 } from './constants.ts'
 import { estoqueDe, faixaQ, tempoForjaAtual, valorEsperadoItem } from './bigorna.ts'
-import { bonusExpedicao, multVenda } from './bonus.ts'
+import { bonusExpedicao } from './bonus.ts'
 import { chefeDerrotado, chefeDisponivel, lutarChefe, preverChefe, type ChefeId } from './chefe.ts'
 import { CONSTRUCOES, DEF_CONSTRUCAO, construcaoLiberada, construir, temConstrucao, type ConstrucaoId } from './construcoes.ts'
 import { comprarUpgrade, custoProximoNivel, estacaoLiberada, vender } from './economy.ts'
+import { avancarEncomendas, entregar, itemServe, motivoNaoEntregar } from './encomendas.ts'
 import {
   DEF_EXPEDICAO,
   EXPEDICOES,
@@ -55,7 +56,7 @@ import {
   recrutar,
   type ClasseId,
 } from './herois.ts'
-import { venderPorQualidade } from './inventario.ts'
+import { venderInuteis } from './inventario.ts'
 import {
   MATERIAIS,
   QUALIDADES,
@@ -147,6 +148,8 @@ export interface ResultadoSim {
   brasasFinais: number
   /** Moedas do ciclo atual a cada 6 h de jogo (t em segundos desde o começo da sim). */
   serieMoedas: { t: number; ciclo: number; moedasDoCiclo: number }[]
+  // Fatia 5
+  encomendas: { entregues: number; expiradas: number; reputacao: number }
   /** O estado ao fim da sim (para testes e diagnóstico). */
   estadoFinal: GameState
 }
@@ -313,30 +316,6 @@ export function melhorContratacao(s: GameState): { id: FerreiroId; retorno: numb
 // Heróis: itens, equipamento, expedições e chefe
 // ---------------------------------------------------------------------------
 
-/**
- * Ids dos itens do inventário que valem a pena guardar: em cada espaço, os N melhores (N = heróis,
- * no mínimo 1 depois que a bigorna existe) entre o inventário e o que já está equipado.
- */
-export function itensReservados(s: GameState): Set<number> {
-  const guardar = new Set<number>()
-  if (s.niveis.bigorna < 1) return guardar
-  const n = Math.max(1, s.herois.length)
-  for (const slot of SLOTS) {
-    const candidatos: { id: number; nota: number; equipado: boolean }[] = []
-    for (const i of s.itens) {
-      if (SLOT_DO_TIPO[i.tipo] === slot) candidatos.push({ id: i.id, nota: pontuacaoItem(i), equipado: false })
-    }
-    for (const h of s.herois) {
-      const e = h.equipamento[slot]
-      if (e) candidatos.push({ id: e.id, nota: pontuacaoItem(e), equipado: true })
-    }
-    // No empate, o equipado fica (evita trocas inúteis).
-    candidatos.sort((a, b) => b.nota - a.nota || Number(b.equipado) - Number(a.equipado))
-    for (const c of candidatos.slice(0, n)) if (!c.equipado) guardar.add(c.id)
-  }
-  return guardar
-}
-
 /** Cada herói livre veste o melhor item do inventário de cada espaço, se for melhor que o atual. */
 export function equiparMelhores(s: GameState): GameState {
   let estado = s
@@ -444,18 +423,34 @@ function venderExcedente(s: GameState): GameState {
   return r
 }
 
-function venderItensNaoReservados(s: GameState): GameState {
-  const guardar = itensReservados(s)
-  if (guardar.size === 0) return venderPorQualidade(s, 'todas').estado
-  const vendaveis = s.itens.filter((i) => !guardar.has(i.id))
-  if (vendaveis.length === 0) return s
-  const ganho = vendaveis.reduce((total, i) => total + i.valor, 0) * multVenda(s)
-  return {
-    ...s,
-    itens: s.itens.filter((i) => guardar.has(i.id)),
-    moedas: s.moedas + ganho,
-    moedasGanhas: s.moedasGanhas + ganho,
+/**
+ * O jogador guloso entrega toda encomenda que consegue cumprir com o inventário e depois vende o que
+ * não é útil (kit dos heróis e itens que servem a pedidos abertos ficam). É a mesma regra da venda
+ * automática do jogo.
+ */
+function entregarEncomendas(s: GameState, agora: number, contagem: { entregues: number; reputacao: number }): GameState {
+  let estado = s
+  for (const e of s.encomendas) {
+    if (motivoNaoEntregar(estado, e.id, agora) !== null) continue
+    const r = entregar(estado, e.id, agora)
+    estado = r.estado
+    contagem.entregues++
+    contagem.reputacao += r.entrega?.reputacao ?? 0
   }
+  return estado
+}
+
+/**
+ * Receita que ajuda uma encomenda aberta: a primeira a que ainda faltam itens e que o material em uso
+ * cumpre (aço serve a ferro, ferro não serve a aço). Null = nenhuma.
+ */
+export function receitaDeEncomenda(s: GameState, material: MaterialId): ReceitaId | null {
+  for (const e of s.encomendas) {
+    if (e.material === 'aco' && material !== 'aco') continue
+    const tem = s.itens.filter((i) => itemServe(i, e)).length
+    if (tem < e.quantidade) return e.tipo
+  }
+  return null
 }
 
 // ---------------------------------------------------------------------------
@@ -478,10 +473,10 @@ export interface PadraoDia {
 export const PADRAO_REALISTA: PadraoDia = { horasContinuas: 2, horasAcordado: 16, sessaoMin: 5, intervaloMin: 90 }
 
 /**
- * Brasas que o sim espera juntar antes de Reforjar `[suposição]`: 7 (49 milhões de moedas no ciclo). Um jogador
- * de verdade decide pelo bolso; 7 fica no meio da faixa de 5 a 15 do GDD.
+ * Brasas que o sim espera juntar antes de Reforjar `[suposição]`: 12 (144 milhões de moedas no ciclo). Um jogador
+ * de verdade decide pelo bolso; 12 ainda cabe na faixa de 5 a 15 do GDD e põe o 1º Reforjar no meio de 2 a 4 dias.
  */
-export const BRASAS_ALVO_PADRAO = 7
+export const BRASAS_ALVO_PADRAO = 12
 
 /** A sim de dias do GDD §4.4: até dois Reforjars, com o padrão realista e as brasas-alvo acima. */
 export const OPCOES_DIAS: OpcoesSim = { padrao: PADRAO_REALISTA, brasasAlvo: BRASAS_ALVO_PADRAO, pararEmReforjas: 2 }
@@ -564,6 +559,13 @@ function maiorValorDe(s: GameState): number {
   )
 }
 
+/**
+ * Ordem de compra das obras no sim: a Muralha passa na frente do Mercado. O Mercado (+15 % no preço) só se
+ * paga em dezenas de horas; o jogador guloso vai direto ao que abre o Reforjar. Antes da Serpe a Muralha
+ * ainda não está liberada, então o Mercado é comprado normalmente nesse intervalo.
+ */
+const ORDEM_CONSTRUCAO_SIM: readonly ConstrucaoId[] = ['segunda_fornalha', 'armazem', 'taverna', 'muralha', 'mercado']
+
 const MARCOS_REPUTACAO = [150, 400, 650, 1000] as const
 const CHEFES_SIM: readonly ChefeId[] = ['golem', 'serpe']
 
@@ -571,7 +573,8 @@ export function simular(horas: number, passo = 0.25, opcoes: OpcoesSim = {}): Re
   const { padrao } = opcoes
   const prioridadeTalentos = opcoes.talentos ?? PRIORIDADE_TALENTOS
   const fim = horas * 3600
-  let s: GameState = { ...estadoInicial(0), ...opcoes.inicial }
+  // O jogador do sim liga a venda automática (opcional no jogo): é o que o impede de travar a bigorna offline.
+  let s: GameState = { ...estadoInicial(0), autoVenda: true, ...opcoes.inicial }
   const compras: Compra[] = []
   const nivel10: Record<EstacaoProducao, number | null> = { mina: null, carvoaria: null, fornalha: null }
   const primeiraQualidade = nuloQualidades()
@@ -603,6 +606,7 @@ export function simular(horas: number, passo = 0.25, opcoes: OpcoesSim = {}): Re
   let moedasDeCiclosAnteriores = 0
   let inicioCiclo = 0
   const expedicoes = { enviadas: 0, sucessos: 0, falhas: 0 }
+  const entregas = { entregues: 0, reputacao: 0 }
 
   const marcosRenda = [
     { rotulo: '5 min', t: 5 * 60 },
@@ -651,7 +655,7 @@ export function simular(horas: number, passo = 0.25, opcoes: OpcoesSim = {}): Re
     if (chefeDerrotado(s, 'golem') && s.niveis.forno < 1) {
       return { tipo: 'forno', custo: custoProximoNivel(s, 'forno') }
     }
-    for (const id of CONSTRUCOES) {
+    for (const id of ORDEM_CONSTRUCAO_SIM) {
       if (!temConstrucao(s, id) && construcaoLiberada(s, id)) {
         return { tipo: 'construcao', custo: DEF_CONSTRUCAO[id].custo, id }
       }
@@ -692,7 +696,7 @@ export function simular(horas: number, passo = 0.25, opcoes: OpcoesSim = {}): Re
     t += passo
     const agora = t * 1000
     const r = tickDetalhado(s, passo)
-    s = { ...r.estado, lastTick: agora }
+    s = avancarEncomendas({ ...r.estado, lastTick: agora }, agora)
     if (tempos.aco === null && r.produzido.aco > 0) tempos.aco = t
     registrarForjados(r.forjados, t)
 
@@ -750,8 +754,16 @@ export function simular(horas: number, passo = 0.25, opcoes: OpcoesSim = {}): Re
         }
       }
       const ocupacao = (seg: number) => (padrao ? proximaPresenca(padrao, t + seg, inicioCiclo) - t : seg)
+      // Kit pronto para um chefe: o jogador segura os heróis em casa em vez de mandá-los de novo,
+      // para lutar assim que todos voltarem (senão uma expedição longa atrasa a luta por horas).
+      const guardarParaChefe = CHEFES_SIM.some(
+        (c) =>
+          !chefeDerrotado(s, c) &&
+          chefeDisponivel(s, c) &&
+          preverChefe({ ...s, expedicoes: [] }, c, s.herois.map((h) => h.id)).vitoria,
+      )
       for (const h of s.herois) {
-        if (emExpedicao(s, h.id)) continue
+        if (guardarParaChefe || emExpedicao(s, h.id)) continue
         const tipo = melhorExpedicao(s, h.id, ocupacao)
         if (!tipo) continue
         s = partir(s, h.id, tipo, agora)
@@ -772,7 +784,8 @@ export function simular(horas: number, passo = 0.25, opcoes: OpcoesSim = {}): Re
 
     for (const m of marcosRep) if (m.t === null && s.reputacao >= m.minimo) m.t = t
 
-    s = venderItensNaoReservados(s)
+    s = entregarEncomendas(s, agora, entregas)
+    s = venderInuteis(s).estado
     s = venderExcedente(s)
 
     if (s.niveis.bigorna >= 1) {
@@ -782,7 +795,7 @@ export function simular(horas: number, passo = 0.25, opcoes: OpcoesSim = {}): Re
         const rAco = escolherReceita(s, 'aco')
         if (estoqueDe(s, 'aco') >= RECEITAS[rAco].lingotes) material = 'aco'
       }
-      const receita = receitaParaKit(s, material) ?? escolherReceita(s, material)
+      const receita = receitaDeEncomenda(s, material) ?? receitaParaKit(s, material) ?? escolherReceita(s, material)
       s = { ...s, automatico: true, ultimaReceita: receita, ultimoMaterial: material }
     }
     if (t >= proximaRealocacao) {
@@ -914,6 +927,7 @@ export function simular(horas: number, passo = 0.25, opcoes: OpcoesSim = {}): Re
     talentosFinais: [...s.talentos],
     brasasFinais: s.brasas,
     serieMoedas,
+    encomendas: { entregues: entregas.entregues, expiradas: s.stats.encomendasExpiradas, reputacao: entregas.reputacao },
     estadoFinal: s,
   }
 }

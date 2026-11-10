@@ -1,6 +1,7 @@
 import { tetoOfflineSegundos } from './bonus.ts'
 import { OFFLINE } from './constants.ts'
 import { abandonarMinigame, inventarioCheio } from './bigorna.ts'
+import { avancarEncomendas } from './encomendas.ts'
 import { COLETA_ZERO, somarColeta, type Coleta, type ExpedicaoId } from './expedicoes.ts'
 import type { Qualidade } from './items.ts'
 import type { GameState } from './state.ts'
@@ -27,6 +28,9 @@ export interface ResumoOffline {
   /** A bigorna parou porque o inventário encheu. */
   inventarioCheio: boolean
   expedicoes: ResumoExpedicoes
+  /** Venda automática (fatia 5): itens que a bigorna fez e o jogo vendeu sozinho enquanto você estava fora. */
+  vendidosAuto: number
+  ganhoAuto: number
 }
 
 /**
@@ -61,6 +65,8 @@ export function applyOffline(
   const produzido: Produzido = { ...PRODUZIDO_ZERO }
   const forjados: Record<Qualidade, number> = { comum: 0, incomum: 0, raro: 0, epico: 0, lendario: 0 }
   let totalForjados = 0
+  let vendidosAuto = 0
+  let ganhoAuto = 0
   let restante = segundosSimulados
   while (restante > 1e-9) {
     const dt = Math.min(OFFLINE.passoSegundos, restante)
@@ -71,12 +77,17 @@ export function applyOffline(
     produzido.carvao += r.produzido.carvao
     produzido.lingote += r.produzido.lingote
     produzido.aco += r.produzido.aco
+    vendidosAuto += r.vendaAuto.quantidade
+    ganhoAuto += r.vendaAuto.ganho
     for (const f of r.forjados) {
       forjados[f.item.qualidade]++
       totalForjados++
     }
     restante -= dt
   }
+
+  // Encomendas: o que venceu some e, se for a hora, surge um pedido novo (no máximo um por abertura).
+  estado = avancarEncomendas(estado, now)
 
   return {
     estado: { ...estado, lastTick: now },
@@ -89,6 +100,8 @@ export function applyOffline(
       totalForjados,
       inventarioCheio: estado.niveis.bigorna >= 1 && inventarioCheio(estado) && totalForjados > 0,
       expedicoes,
+      vendidosAuto,
+      ganhoAuto,
     },
   }
 }
