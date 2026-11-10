@@ -5,7 +5,6 @@ import { ferreiroEm } from '../game/ferreiros.ts'
 import { formatar } from '../game/format.ts'
 import type { AlvoToque } from '../game/toque.ts'
 import { useGame } from '../store.ts'
-import { Dica } from './Dica.tsx'
 import { Sprite, type SpriteNome } from './Sprite.tsx'
 import { SpriteEstacao } from './SpritesEvolucao.tsx'
 
@@ -52,6 +51,9 @@ let contador = 0
 export function CenaForja() {
   const jogo = useGame((s) => s.jogo)
   const tocarCena = useGame((s) => s.tocarCena)
+  // Convite a tocar: fica dentro da cena e some sozinho no primeiro toque que rende (sem botão "Entendi").
+  const convidar = useGame((s) => !s.jogo.dicasVistas.includes('cena'))
+  const dispensarDica = useGame((s) => s.dispensarDica)
   const reduzir = useReducedMotion()
   const caixa = useRef<HTMLDivElement>(null)
   const [escala, setEscala] = useState(2)
@@ -84,7 +86,9 @@ export function CenaForja() {
   const aoTocar = (p: Ponto) => {
     if (p.alvo === 'bigorna' && !bigornaDePe) return
     const ganho = tocarCena(p.alvo)
+    if (ganho === null) return
     const falhou = ganho <= 0
+    if (!falhou && convidar) dispensarDica('cena')
     setTocado({ alvo: p.alvo, id: ++contador, falhou })
     if (!falhou && 'vibrate' in navigator) navigator.vibrate?.(8)
     const texto = falhou
@@ -108,7 +112,6 @@ export function CenaForja() {
 
   return (
     <>
-      <Dica id="cena">Toque nas estações para ajudar: cavar minério, juntar carvão, atiçar o fogo e martelar a peça.</Dica>
       <div className="cena" ref={caixa} style={{ height: H * escala }}>
         <div className="cena-palco" style={palco}>
           <Sprite nome="cena_forja" escala={1} />
@@ -160,6 +163,12 @@ export function CenaForja() {
             <div className="cena-ferreiro" aria-hidden="true">
               <Sprite nome={`ferreiro_${ferreiro}`} escala={1} />
             </div>
+          )}
+
+          {convidar && (
+            <span className="cena-convite" aria-hidden="true">
+              Toque para cavar
+            </span>
           )}
 
           {efeitos.map((e) => (

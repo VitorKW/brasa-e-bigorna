@@ -1,0 +1,5 @@
+# Finais de linha iguais em qualquer sistema (o projeto nasceu no Windows).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.woff2 binary

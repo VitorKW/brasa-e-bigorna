@@ -118,11 +118,22 @@ em vez de teto diário, porque um teto diário exigiria um relógio de dia, que 
 - *Uma coisa por vez.* Forja em Produção / Bigorna / Ferreiros, Mapa com uma região por vez, barra de recursos que mostra só o que importa
   na aba aberta, e números técnicos ("próximo: 520/s", PV/ATQ dos chefes) fora da tela principal.
 - *Cena viva.* Um fundo em pixel art (`art/fatia6.px.js`) com as estações por cima, no DOM, para reagirem ao estado (fogo, fumaça, carrinho,
-  ferreiro martelando) e ao dedo. `toque.ts`: cada toque vale 1/4 s de produção com piso no começo, e na bigorna adianta 8 % da peça sem
+  ferreiro martelando) e ao dedo. `toque.ts`: cada toque vale uma fração de segundo de produção, com piso no começo, e na bigorna adianta 8 % da peça sem
   nunca terminá-la (o tick continua dono do fim da forja, da batida e do inventário). O sim não toca, então o balanceamento idle não muda.
 - *Efeitos.* Moedas voando até o contador, selo "Nível N" ou "Produção x2!" ao melhorar, revelação para peça épica ou lendária (sempre na
   batida; na forja automática, só lendária e no máximo uma a cada 30 s) e heróis andando sobre o banner da região. Tudo some com
   `prefers-reduced-motion`.
+
+**Fatia 7: evolução visível e revisão geral.**
+- *Arte em camadas.* Estações ganham uma camada transparente por marco de nível (10/25/50/100) e um nome novo; heróis vestem elmo,
+  armadura, escudo e arma por cima do sprite-base (`visual.ts` decide as camadas; `art/fatia7.px.js` desenha). Por serem camadas, valem
+  também para a fornalha acesa, a bigorna batendo e o herói andando, sem multiplicar sprites.
+- *Toque com limite.* Cada toque vale 0,1 s de produção e a store ignora toques a menos de 100 ms na mesma estação: um dedo rápido soma
+  no máximo ~60 % a uma estação, e auto-clicker não quebra a economia.
+- *Robustez.* Tela de erro com "Recarregar" no lugar da tela em branco; sprites sem piscar (o resultado do carregamento fica em cache
+  síncrono); o brilho de "subiu de nível" não remonta mais o cartão (remontar engolia toques de quem melhora rápido); o aviso de
+  conquista saiu de cima do botão de vender.
+- *Sem terceiros em tempo de execução.* Fontes no build e backup do save por texto: o jogo não chama nenhum serviço externo.
 
 **Sim guloso de balanceamento.** `simular(horas, passo, opções)` joga o jogo com uma estratégia simples (compra a opção de melhor retorno por
 moeda, aloca ferreiros por força bruta, entrega encomendas, equipa o melhor kit, luta quando a previsão dá vitória) e mede os marcos. Com
@@ -169,7 +180,7 @@ estão documentados no GDD.
   (que já suporta o Vite 8) porque o app tem uma tela só e nenhuma rota: o workbox traria centenas de pacotes para resolver um problema que
   cabe em 90 linhas legíveis. Um plugin do Vite (`scripts/pwa-plugin.ts`) grava `dist/sw.js` com a lista de todos os arquivos do build e
   uma versão que é o hash do conteúdo, então um sprite redesenhado também invalida o cache.
-- **Estratégia:** cache-primeiro para o app e os sprites; fontes do Google com revalidação em segundo plano.
+- **Estratégia:** cache-primeiro para o app, os sprites e as fontes (que vêm no próprio build, via `@fontsource`, só latim em woff2).
 - **Atualização:** o service worker novo espera; o app mostra "Nova versão. Recarregar?" e só troca quando você aceita. O save fica no
   `localStorage`, que a atualização não toca, e o app grava antes de recarregar.
 - **Cuidado com `Vary`:** o cache é consultado com `ignoreVary`. O servidor pode responder com `Vary: Origin`, e o script `type=module`
@@ -189,9 +200,8 @@ primeira vez de cada mecânica, sem tutorial que bloqueie a tela.
 
 - **Relógio do celular.** Sem servidor, não há como saber a hora de verdade. O teto offline limita a produção e um relógio que volta é
   ignorado, mas adiantar o relógio faz as expedições voltarem antes (o dano é limitado: o loot é pequeno perto da produção).
-- **Save só local.** `localStorage` com backup do save anterior; limpar os dados do navegador apaga o jogo. Não há sincronização.
-- **Fontes.** O Barlow vem do Google Fonts: na primeira visita é preciso estar online; depois ficam em cache. Sem elas o jogo usa a fonte
-  do sistema.
+- **Save só local.** `localStorage` com backup do save anterior; limpar os dados do navegador apaga o jogo. Não há sincronização, mas
+  em Guilda › Conquistas e ajustes dá para copiar o save como texto e restaurá-lo (inclusive em outro aparelho).
 - **Sem navegador nos testes.** Os testes de interface renderizam no servidor; service worker, instalação, toque e desempenho precisam ser
   conferidos à mão no celular.
 - **Fragilidade do balanceamento.** A data da Serpe depende da moeda chegar antes ou depois das 16 h acordado de cada dia da sim; ela

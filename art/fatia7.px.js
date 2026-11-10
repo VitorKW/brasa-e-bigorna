@@ -104,14 +104,17 @@ const MAT = { ferro: {}, aco: { i: "z", I: "Z", j: "J" } }
 const H = { w: 22, h: 22, outline: "k" }
 
 for (const [m, swap] of Object.entries(MAT)) {
-  // Elmo: calota sobre o cabelo, abas laterais e nasal.
+  // Elmo: calota aberta com nasal. Sem abas laterais: o cabelo (ou o capuz) continua aparecendo dos
+  // lados, e é por ele que se reconhece a classe.
   sprite(`equip_elmo_${m}`, { ...H, swap },
-    rect(5, 0, 12, 3, "I"), hline(6, 0, 10, "j"), rect(3, 2, 16, 2, "i"),
-    rect(3, 4, 2, 3, "i"), rect(17, 4, 2, 3, "i"), vline(10, 3, 3, "I"), vline(11, 3, 3, "I"))
-  // Armadura: peitoral sobre a túnica e ombreiras.
+    rect(6, 0, 10, 2, "I"), hline(7, 0, 8, "j"), rect(5, 2, 12, 1, "i"),
+    vline(10, 3, 3, "I"), vline(11, 3, 3, "I"))
+  // Armadura: duas placas de peito e ombreiras. A faixa do meio e as mangas ficam à mostra, na cor
+  // da túnica da classe (vermelho, azul, verde).
   sprite(`equip_armadura_${m}`, { ...H, swap },
-    rect(4, 11, 14, 5, "I"), hline(4, 11, 14, "j"), vline(10, 12, 4, "i"), vline(11, 12, 4, "i"),
-    rect(1, 11, 4, 3, "i"), rect(17, 11, 4, 3, "i"), hline(1, 11, 4, "I"), hline(17, 11, 4, "I"),
+    rect(5, 11, 4, 5, "I"), rect(13, 11, 4, 5, "I"), hline(5, 11, 4, "j"), hline(13, 11, 4, "j"),
+    vline(8, 12, 4, "i"), vline(13, 12, 4, "i"),
+    rect(2, 11, 3, 2, "i"), rect(17, 11, 3, 2, "i"), hline(2, 11, 3, "I"), hline(17, 11, 3, "I"),
     px(6, 13, "j"), px(15, 13, "j"))
   // Escudo no braço esquerdo (lado esquerdo da tela).
   sprite(`equip_escudo_${m}`, { ...H, swap },

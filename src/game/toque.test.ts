@@ -7,7 +7,7 @@ import { TOQUE, tocar } from './toque.ts'
 const base = (): GameState => estadoInicial(0, 1)
 
 describe('toque na cena', () => {
-  it('mina: no começo rende o piso (1 minério), mais tarde 1/4 s de produção', () => {
+  it('mina: no começo rende o piso (1 minério), mais tarde uma fração de segundo de produção', () => {
     const s = base()
     const r = tocar(s, 'mina')
     expect(r.ganho).toBe(TOQUE.pisoMina)

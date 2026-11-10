@@ -2201,7 +2201,8 @@ p {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(84px + env(safe-area-inset-bottom));
+  /* No alto, por cima da barra de recursos: embaixo ele tapava o botão de vender e as abas. */
+  top: calc(8px + env(safe-area-inset-top));
   display: flex;
   justify-content: center;
   padding: 0 var(--espaco);
@@ -2782,13 +2783,17 @@ p {
 }
 
 /* Efeitos: subir de nível, moedas voando, revelação de peça rara. */
-.estacao.subiu {
-  animation: estacao-brilha 0.5s ease-out;
+.estacao-brilho {
+  position: absolute;
+  inset: -1px;
+  border-radius: var(--raio);
+  pointer-events: none;
+  animation: estacao-brilha 0.5s ease-out forwards;
 }
 
 @keyframes estacao-brilha {
-  0% { box-shadow: 0 0 0 0 rgba(255, 212, 122, 0.8), inset 0 1px 0 rgba(243, 233, 220, 0.12); }
-  100% { box-shadow: 0 0 0 10px rgba(255, 212, 122, 0), inset 0 1px 0 rgba(243, 233, 220, 0.12); }
+  0% { box-shadow: 0 0 0 0 rgba(255, 212, 122, 0.8); }
+  100% { box-shadow: 0 0 0 10px rgba(255, 212, 122, 0); }
 }
 
 .estacao-pop {
@@ -2902,12 +2907,13 @@ p {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .estacao.subiu,
+  .estacao-brilho,
   .estacao-pop,
   .chip-moedas.pulo .sprite,
   .revelacao-raios {
     animation: none;
   }
+  .estacao-brilho,
   .estacao-pop {
     display: none;
   }
@@ -3010,4 +3016,96 @@ p {
   .equipar-retrato.vestiu {
     animation: none;
   }
+}
+
+/* Convite a tocar na cena (some no primeiro toque) e tela de erro. */
+.cena-convite {
+  position: absolute;
+  left: 2px;
+  top: 16px;
+  padding: 1px 3px;
+  border-radius: 2px;
+  background: var(--amarelo);
+  color: var(--carvao);
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 6px;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: convite-quica 1s ease-in-out infinite;
+}
+
+.cena-convite::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  bottom: -3px;
+  border: 2px solid transparent;
+  border-top-color: var(--amarelo);
+  border-bottom: 0;
+}
+
+@keyframes convite-quica {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
+
+.tela-erro {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 48px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.tela-erro h1 {
+  margin: 0;
+  font-family: var(--fonte-titulo);
+  font-size: 30px;
+}
+
+.tela-erro p {
+  margin: 0;
+}
+
+.tela-erro-detalhe {
+  max-width: 100%;
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cena-convite {
+    animation: none;
+  }
+}
+
+/* Backup do save (Ajustes). */
+.backup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.backup-botoes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.backup-texto {
+  width: 100%;
+  padding: 8px;
+  background: var(--carvao);
+  color: var(--texto);
+  border: 1px solid var(--aco);
+  border-radius: var(--raio);
+  font: 13px/1.3 ui-monospace, Menlo, Consolas, monospace;
+  resize: vertical;
 }

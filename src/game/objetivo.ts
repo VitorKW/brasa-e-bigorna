@@ -26,8 +26,10 @@ export const NIVEL_MINA_INICIAL = 5
 const fracao = (tem: number, precisa: number): number => (precisa <= 0 ? 1 : Math.max(0, Math.min(1, tem / precisa)))
 
 export function proximoObjetivo(s: GameState, now: number): Objetivo {
-  if (retornosPendentes(s, now).length > 0) {
-    return { id: 'coletar', texto: 'Seus heróis voltaram. Colete o loot.', destino: 'mapa', progresso: null }
+  const voltaram = retornosPendentes(s, now).length
+  if (voltaram > 0) {
+    const texto = voltaram === 1 ? 'Um herói voltou. Colete o loot.' : `${voltaram} heróis voltaram. Colete o loot.`
+    return { id: 'coletar', texto, destino: 'mapa', progresso: null }
   }
 
   if (s.niveis.bigorna < 1) {

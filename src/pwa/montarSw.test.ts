@@ -56,9 +56,17 @@ describe('montarSw', () => {
     expect(() => montarSw(modelo, [], "x'; alert(1)//")).toThrow()
   })
 
-  it('o cache de instalação não é o mesmo das fontes (fonte não some a cada versão)', () => {
+  it('o cache leva a versão no nome e o cache antigo das fontes do Google é apagado', () => {
     expect(modelo).toContain("'brasa-app-' + VERSAO")
-    expect(modelo).toContain("'brasa-fontes'")
+    expect(modelo).toContain("n === CACHE_ANTIGO_FONTES")
+    expect(modelo).not.toContain('fonts.googleapis.com')
+  })
+
+  it('as fontes vêm com o app: o index não pede nada ao Google Fonts', () => {
+    const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8')
+    expect(html).not.toContain('fonts.googleapis.com')
+    const fontes = readFileSync(new URL('../fontes.css', import.meta.url), 'utf8')
+    expect(fontes.match(/@font-face/g)?.length).toBe(6)
   })
 })
 

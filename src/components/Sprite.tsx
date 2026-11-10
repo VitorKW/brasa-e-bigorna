@@ -169,6 +169,8 @@ const urlDe = (nome: SpriteNome) => `${import.meta.env.BASE_URL}sprites/${nome}.
 
 /** Cache de "essa imagem existe?" para não retestar a cada render. */
 const existe = new Map<string, Promise<boolean>>()
+/** Respostas já conhecidas, lidas de forma síncrona: um sprite que já carregou uma vez nunca mais pisca. */
+const resultado = new Map<string, boolean>()
 function testarImagem(url: string): Promise<boolean> {
   let p = existe.get(url)
   if (!p) {
@@ -177,6 +179,9 @@ function testarImagem(url: string): Promise<boolean> {
       img.onload = () => resolve(img.naturalWidth > 0)
       img.onerror = () => resolve(false)
       img.src = url
+    }).then((ok) => {
+      resultado.set(url, ok)
+      return ok
     })
     existe.set(url, p)
   }
@@ -197,7 +202,7 @@ interface Props {
 export function Sprite({ nome, escala = 2, quadros, fps = 6, rotulo }: Props) {
   const def = SPRITES[nome]
   const url = urlDe(nome)
-  const [carregou, setCarregou] = useState<boolean | null>(null)
+  const [carregou, setCarregou] = useState<boolean | null>(() => resultado.get(url) ?? null)
   const n = Math.max(1, quadros ?? def.quadros ?? 1)
   const esc = Math.max(1, Math.round(escala))
   const largura = def.w * esc
@@ -205,8 +210,9 @@ export function Sprite({ nome, escala = 2, quadros, fps = 6, rotulo }: Props) {
 
   useEffect(() => {
     let vivo = true
-    setCarregou(null)
-    void testarImagem(url).then((ok) => vivo && setCarregou(ok))
+    const conhecido = resultado.get(url)
+    setCarregou(conhecido ?? null)
+    if (conhecido === undefined) void testarImagem(url).then((ok) => vivo && setCarregou(ok))
     return () => {
       vivo = false
     }
@@ -244,7 +250,13 @@ export function Sprite({ nome, escala = 2, quadros, fps = 6, rotulo }: Props) {
   // Camada sem arquivo (ou ainda carregando): nada, para não cobrir a arte de baixo.
   if (def.camada) return null
 
-  // Carregando ou arquivo ausente: quadrado com a cor da paleta e a inicial.
+  // Carregando: uma caixa vazia do tamanho certo. O quadrado colorido piscando antes da arte era feio;
+  // ele fica só para arquivo ausente de verdade.
+  if (carregou === null && typeof window !== 'undefined') {
+    return <div className="sprite" style={{ width: largura, height: altura }} {...a11y} />
+  }
+
+  // Arquivo ausente (ou render no servidor, nos testes): quadrado com a cor da paleta e a inicial.
   const estilo: CSSProperties = {
     width: largura,
     height: altura,

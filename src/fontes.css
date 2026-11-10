@@ -1,0 +1,9 @@
+/* Fontes do jogo, servidas junto com ele (Barlow e Barlow Condensed, licença OFL, via @fontsource).
+   Só o subconjunto latino em woff2: cobre o português e entra no pré-cache do service worker,
+   então o jogo abre offline com a fonte certa desde a primeira visita. */
+@font-face { font-family: 'Barlow'; font-style: normal; font-display: swap; font-weight: 400; src: url('@fontsource/barlow/files/barlow-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-display: swap; font-weight: 500; src: url('@fontsource/barlow/files/barlow-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-display: swap; font-weight: 600; src: url('@fontsource/barlow/files/barlow-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-display: swap; font-weight: 500; src: url('@fontsource/barlow-condensed/files/barlow-condensed-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-display: swap; font-weight: 600; src: url('@fontsource/barlow-condensed/files/barlow-condensed-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-display: swap; font-weight: 700; src: url('@fontsource/barlow-condensed/files/barlow-condensed-latin-700-normal.woff2') format('woff2'); }

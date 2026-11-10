@@ -32,7 +32,7 @@ import { desserializar, serializar } from './game/save.ts'
 import { estadoInicial, type GameState } from './game/state.ts'
 import { comprarTalento as comprarTalentoRegra, type TalentoId } from './game/talentos.ts'
 import { tickDetalhado } from './game/tick.ts'
-import { tocar as tocarRegra, type AlvoToque } from './game/toque.ts'
+import { TOQUE, tocar as tocarRegra, type AlvoToque } from './game/toque.ts'
 
 const CHAVE_SAVE = 'brasa-e-bigorna:save'
 const CHAVE_BACKUP = 'brasa-e-bigorna:save-backup'
@@ -101,8 +101,8 @@ interface Store {
   ultimaEntrega: { id: number; entrega: Entrega } | null
   irPara: (aba: AbaId) => void
   irParaForja: (sub: SubForja) => void
-  /** Toque na cena da forja. Devolve quanto rendeu (0 = nada aconteceu). */
-  tocarCena: (alvo: AlvoToque) => number
+  /** Toque na cena da forja. Devolve quanto rendeu (0 = nada aconteceu; null = cedo demais, ignorado). */
+  tocarCena: (alvo: AlvoToque) => number | null
   avancar: (now: number) => void
   melhorar: (estacao: EstacaoId) => void
   vender: (recurso: RecursoId | 'tudo') => void
@@ -118,6 +118,10 @@ interface Store {
   venderItens: (qualidade: Qualidade | 'todas') => void
   fecharResumo: () => void
   salvar: () => void
+  /** Texto do save atual, para o jogador guardar ou levar a outro aparelho. */
+  exportarSave: () => string
+  /** Troca o jogo pelo save colado. Devolve false (e não muda nada) se o texto não for um save válido. */
+  importarSave: (texto: string) => boolean
   recrutar: (classe: ClasseId) => void
   equipar: (heroiId: number, itemId: number) => void
   desequipar: (heroiId: number, slot: Slot) => void
@@ -162,6 +166,7 @@ const somAtivo = (jogo: GameState, id: SomId): void => {
   if (jogo.som) tocar(id)
 }
 
+const ultimoToque: Partial<Record<AlvoToque, number>> = {}
 let contadorGanho = 0
 let contadorForjado = 0
 let contadorBatida = 0
@@ -186,6 +191,10 @@ export const useGame = create<Store>((set, get) => ({
   irParaForja: (sub) => set({ aba: 'forja', subForja: sub, ultimoReforjar: null }),
 
   tocarCena: (alvo) => {
+    // Intervalo mínimo por estação: segura auto-clicker e multitoque sem punir o dedo rápido.
+    const agora = Date.now()
+    if (agora - (ultimoToque[alvo] ?? 0) < TOQUE.intervaloMinMs) return null
+    ultimoToque[alvo] = agora
     const r = tocarRegra(get().jogo, alvo)
     if (r.ganho > 0) set({ jogo: r.estado })
     return r.ganho
@@ -298,6 +307,19 @@ export const useGame = create<Store>((set, get) => ({
   fecharResumo: () => set({ resumoOffline: null }),
 
   salvar: () => gravarSave(get().jogo),
+
+  exportarSave: () => serializar(get().jogo),
+
+  importarSave: (texto) => {
+    const estado = desserializar(texto.trim())
+    if (!estado) return false
+    // O save antigo vira o backup (gravarSave promove o atual antes de escrever). O tempo desde o
+    // lastTick do save importado entra como progresso offline no próximo tick, como em qualquer volta.
+    gravarSave(get().jogo)
+    set({ jogo: estado, batidaAtiva: null, combate: null, ultimoReforjar: null, ultimaEntrega: null, avisoConquistas: [] })
+    gravarSave(estado)
+    return true
+  },
 
   recrutar: (classe) => {
     const { jogo } = get()

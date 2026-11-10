@@ -112,3 +112,23 @@ describe('store: conquistas e opções', () => {
     expect(useGame.getState().jogo.encomendas).toHaveLength(1)
   })
 })
+
+describe('store: backup do save', () => {
+  beforeEach(() => comecar())
+
+  it('exportar e importar devolvem o jogo ao ponto da cópia', () => {
+    comecar({ moedas: 1234 })
+    const copia = useGame.getState().exportarSave()
+    useGame.setState({ jogo: { ...useGame.getState().jogo, moedas: 5 } })
+    expect(useGame.getState().importarSave(`  ${copia}\n`)).toBe(true)
+    expect(useGame.getState().jogo.moedas).toBe(1234)
+  })
+
+  it('texto que não é save é recusado e nada muda', () => {
+    comecar({ moedas: 77 })
+    for (const lixo of ['', 'oi', '{"version":999}', '[1,2,3]']) {
+      expect(useGame.getState().importarSave(lixo), lixo).toBe(false)
+    }
+    expect(useGame.getState().jogo.moedas).toBe(77)
+  })
+})

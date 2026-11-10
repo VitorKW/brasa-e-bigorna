@@ -1,17 +1,22 @@
 // Toque na cena da forja (fatia 6): o jogador ativo "ajuda" as estações com o dedo.
 // Cada toque vale uma fração de segundo da produção da estação, com um piso para que, no começo,
-// cavar com o dedo faça diferença de verdade. Mais tarde o idle domina e o toque vira tempero.
-// O sim não toca: o balanceamento do jogo parado não muda.
+// cavar com o dedo faça diferença de verdade. Mais tarde o idle domina e o toque vira tempero:
+// com o intervalo mínimo entre toques, um dedo rápido (uns 6 toques/s) soma no máximo ~60 % à
+// produção de UMA estação enquanto durar o esforço. O sim não toca: o balanceamento parado não muda.
 import { taxas } from './chain.ts'
 import { RECEITA_LINGOTE } from './constants.ts'
 import type { GameState } from './state.ts'
 
 export const TOQUE = {
   /** Segundos de produção que cada toque rende. */
-  segundos: 0.25,
+  segundos: 0.1,
+  /** Intervalo mínimo entre toques na mesma estação (a store ignora os que vierem antes). */
+  intervaloMinMs: 100,
   /** Mínimo por toque na mina e na carvoaria (o começo do jogo é cavar). */
   pisoMina: 1,
   pisoCarvoaria: 0.5,
+  /** Mínimo de lingotes por toque na fornalha (se houver insumo). */
+  pisoFornalha: 0.5,
   /** Na bigorna, cada martelada adianta esta fração da peça. */
   avancoBigorna: 0.08,
 } as const
@@ -38,8 +43,8 @@ export function tocar(s: GameState, alvo: AlvoToque): ResultadoToque {
       return { estado: { ...s, recursos: { ...s.recursos, carvao: s.recursos.carvao + ganho } }, ganho }
     }
     case 'fornalha': {
-      // Atiçar o fogo funde na hora o que a fornalha faria em 1/4 s, se houver insumo no estoque.
-      const quer = Math.max(1, t.fornalha * TOQUE.segundos)
+      // Atiçar o fogo funde na hora uma fração de segundo da fornalha, se houver insumo no estoque.
+      const quer = Math.max(TOQUE.pisoFornalha, t.fornalha * TOQUE.segundos)
       const ganho = Math.floor(
         Math.min(quer, s.recursos.minerio / RECEITA_LINGOTE.minerio, s.recursos.carvao / RECEITA_LINGOTE.carvao) * 100,
       ) / 100

@@ -61,7 +61,10 @@ export function StationCard(p: Props) {
     .join(' ')
 
   return (
-    <article className={`${classe}${subiu ? ' subiu' : ''}`} aria-label={p.nome} key={subiu ? `s${subiu.id}` : undefined}>
+    <article className={classe} aria-label={p.nome}>
+      {/* O brilho é um elemento próprio com key: reinicia a animação sem remontar o cartão (remontar
+          trocava o botão no meio do toque e engolia cliques de quem melhora rápido). */}
+      {subiu && <span key={`b${subiu.id}`} className="estacao-brilho" aria-hidden="true" />}
       {subiu && (
         <span
           key={subiu.id}

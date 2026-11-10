@@ -36,6 +36,97 @@ function Estatisticas() {
 }
 
 /**
+ * Backup do progresso: o save é só local, então o jogador pode copiar o texto dele (para guardar ou
+ * levar a outro aparelho) e colar de volta. Restaurar pede um segundo toque, porque troca o jogo atual.
+ */
+function Backup() {
+  const exportarSave = useGame((s) => s.exportarSave)
+  const importarSave = useGame((s) => s.importarSave)
+  const [aberto, setAberto] = useState<'copiar' | 'restaurar' | null>(null)
+  const [texto, setTexto] = useState('')
+  const [aviso, setAviso] = useState('')
+  const [confirmando, setConfirmando] = useState(false)
+
+  const copiar = async () => {
+    const save = exportarSave()
+    setTexto(save)
+    setAberto('copiar')
+    setConfirmando(false)
+    try {
+      await navigator.clipboard.writeText(save)
+      setAviso('Save copiado. Cole num lugar seguro (notas, e-mail para você).')
+    } catch {
+      setAviso('Não deu para copiar sozinho. Selecione o texto abaixo e copie.')
+    }
+  }
+
+  const restaurar = () => {
+    if (!confirmando) {
+      setConfirmando(true)
+      setAviso('Isso troca o jogo atual pelo save colado. Toque de novo para confirmar.')
+      return
+    }
+    setConfirmando(false)
+    if (importarSave(texto)) {
+      setAviso('Save restaurado.')
+      setTexto('')
+      setAberto(null)
+    } else {
+      setAviso('Esse texto não é um save válido. Nada mudou.')
+    }
+  }
+
+  return (
+    <section className="backup" aria-label="Backup do progresso">
+      <p className="estacao-dica">O progresso fica só neste aparelho. Guarde uma cópia para não perder.</p>
+      <div className="backup-botoes">
+        <button type="button" className="botao botao-secundario" onClick={copiar}>
+          Copiar save
+        </button>
+        <button
+          type="button"
+          className="botao botao-secundario"
+          aria-expanded={aberto === 'restaurar'}
+          onClick={() => {
+            setAberto(aberto === 'restaurar' ? null : 'restaurar')
+            setTexto('')
+            setAviso('')
+            setConfirmando(false)
+          }}
+        >
+          Restaurar save
+        </button>
+      </div>
+      {aberto && (
+        <textarea
+          className="backup-texto"
+          aria-label={aberto === 'copiar' ? 'Texto do save' : 'Cole aqui o save'}
+          placeholder={aberto === 'restaurar' ? 'Cole aqui o texto do save' : undefined}
+          readOnly={aberto === 'copiar'}
+          value={texto}
+          rows={3}
+          onChange={(e) => {
+            setTexto(e.target.value)
+            setConfirmando(false)
+          }}
+          onFocus={(e) => aberto === 'copiar' && e.target.select()}
+        />
+      )}
+      {aberto === 'restaurar' && (
+        <button type="button" className="botao botao-primario botao-largo" disabled={texto.trim() === ''} onClick={restaurar}>
+          {confirmando ? 'Confirmar: trocar o jogo atual' : 'Restaurar'}
+        </button>
+      )}
+      {aviso && (
+        <p className={confirmando ? 'estacao-aviso' : 'estacao-dica'} role="status">
+          {aviso}
+        </p>
+      )}
+    </section>
+  )
+}
+
+/**
  * Folha de conquistas e ajustes (fatia 5). As estatísticas locais do GDD §8 ficam escondidas atrás de
  * um botão: servem ao playtest, não ao jogador comum.
  */
@@ -98,6 +189,8 @@ export function ConquistasSheet({ onFechar }: { onFechar: () => void }) {
             <small>{som ? ' · ligado' : ' · desligado (tons curtos, sem arquivos)'}</small>
           </span>
         </button>
+
+        <Backup />
 
         <button
           type="button"

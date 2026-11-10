@@ -103,9 +103,6 @@ function Producao() {
   return (
     <>
       <CenaForja />
-      <Dica id="melhorar" visivel={n.mina <= 3}>
-        Venda o minério (botão embaixo) e toque em Melhorar para cavar mais rápido. Mina e carvoaria alimentam a fornalha, e a fornalha, a bigorna.
-      </Dica>
       <section className="cadeia" aria-label="Estações da forja">
         <StationCard
           nome="Mina"

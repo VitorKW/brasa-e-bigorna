@@ -441,11 +441,11 @@ describe('venda automática e primeira experiência', () => {
     expect(html(<ItensPanel />)).toContain('aria-checked="true"')
   })
 
-  it('a primeira tela ensina o primeiro passo, e a dica some ao dispensar', () => {
-    comEstado(estadoInicial(0, 1))
-    expect(html(<ForgeScreen />)).toContain('toque em Melhorar para cavar mais rápido')
-    comEstado({ ...estadoInicial(0, 1), dicasVistas: ['melhorar'] })
-    expect(html(<ForgeScreen />)).not.toContain('toque em Melhorar')
+  it('a primeira tela convida a tocar na cena, e o convite some depois do primeiro toque', () => {
+    comEstado(estadoInicial(0, 1), { subForja: 'producao' })
+    expect(html(<ForgeScreen />)).toContain('Toque para cavar')
+    comEstado({ ...estadoInicial(0, 1), dicasVistas: ['cena'] }, { subForja: 'producao' })
+    expect(html(<ForgeScreen />)).not.toContain('Toque para cavar')
   })
 
   it('o resumo offline conta o que a venda automática vendeu e oferece ligá-la quando o inventário travou', () => {
