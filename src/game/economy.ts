@@ -1,3 +1,4 @@
+import { multVenda } from './bonus.ts'
 import { chefeDerrotado } from './chefe.ts'
 import { PRECO_VENDA, custoUpgrade, type EstacaoId, type RecursoId } from './constants.ts'
 import type { GameState } from './state.ts'
@@ -38,7 +39,7 @@ export function vender(
   const estoque = s.recursos[recurso]
   const qtd = quantidade === 'tudo' ? estoque : Math.min(quantidade, estoque)
   if (!(qtd > 0) || !Number.isFinite(qtd)) return { estado: s, ganho: 0 }
-  const ganho = qtd * PRECO_VENDA[recurso]
+  const ganho = qtd * PRECO_VENDA[recurso] * multVenda(s)
   return {
     estado: {
       ...s,

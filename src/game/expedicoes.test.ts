@@ -50,11 +50,48 @@ describe('chance e loot (GDD §4.2)', () => {
     expect(chanceFragmento('pico', 0.5)).toBe(1)
   })
 
-  it('reputação por sucesso fica entre 5 e 15', () => {
-    for (const id of EXPEDICOES) {
-      expect(reputacaoDe(id)).toBeGreaterThanOrEqual(5)
-      expect(reputacaoDe(id)).toBeLessThanOrEqual(15)
+  it('reputação por sucesso = K × horas^0,5, sem a vantagem das expedições curtas e repetidas', () => {
+    expect(reputacaoDe('passo')).toBeCloseTo(17, 6)
+    expect(reputacaoDe('pico')).toBeCloseTo(17 * Math.sqrt(8), 6)
+    // quanto mais longa, mais reputação por sucesso...
+    for (let i = 1; i < EXPEDICOES.length; i++) {
+      expect(reputacaoDe(EXPEDICOES[i]!)).toBeGreaterThan(reputacaoDe(EXPEDICOES[i - 1]!))
     }
+    // ...e por hora de herói, as curtas rendem menos que na fórmula antiga (5 por 2 min = 150 por hora)
+    for (const id of EXPEDICOES) {
+      const porHora = reputacaoDe(id) / (DEF_EXPEDICAO[id].segundos / 3600)
+      expect(porHora).toBeLessThan(800)
+    }
+  })
+
+  it('retorno decrescente: com mais reputação acumulada, cada sucesso rende menos', () => {
+    expect(reputacaoDe('passo', 0)).toBeGreaterThan(reputacaoDe('passo', 500))
+    expect(reputacaoDe('passo', 500)).toBeGreaterThan(reputacaoDe('passo', 1500))
+    expect(reputacaoDe('passo', 1000)).toBeCloseTo(17 / 2, 6) // R = 1000: metade em 1 000
+    // nunca zera: quem passa de 1 000 ainda ganha um pouco
+    expect(reputacaoDe('trilha', 100_000)).toBeGreaterThan(0)
+  })
+
+  it('a reputação gravada na partida usa a reputação que o jogador tinha', () => {
+    let achou = 0
+    for (let semente = 1; semente <= 60 && achou < 3; semente++) {
+      const s = partir({ ...base({ reputacao: 1000 }), rng: semente }, 1, 'trilha', 0)
+      const e = s.expedicoes[0]!
+      if (!e.sucesso) continue
+      achou++
+      expect(e.reputacao).toBeCloseTo(reputacaoDe('trilha', 1000), 9)
+      expect(e.reputacao).toBeCloseTo(reputacaoDe('trilha', 0) / 2, 9)
+    }
+    expect(achou).toBeGreaterThan(0)
+  })
+
+  it('Rota segura soma 10 pontos de chance (ainda limitada a 95 %); Bandeira soma 20 % de moedas e XP', () => {
+    expect(chanceSucesso(100, 100, 0.1)).toBeCloseTo(0.6, 9)
+    expect(chanceSucesso(1000, 100, 0.1)).toBe(0.95)
+    const p = preverExpedicao(100, 0, 'moinho', { chance: 0, loot: 1.2 })
+    const q = preverExpedicao(100, 0, 'moinho')
+    expect(p.moedas).toBeCloseTo(q.moedas * 1.2, 6)
+    expect(p.xp).toBeCloseTo(q.xp * 1.2, 6)
   })
 
   it('XP do herói = D / 2', () => {

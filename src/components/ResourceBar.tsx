@@ -40,8 +40,9 @@ export function ResourceBar() {
   const temAco = jogo.niveis.forno >= 1 || jogo.recursos.aco > 0
   const temFragmento = jogo.fragmentos > 0
   const temReputacao = jogo.reputacao > 0 || jogo.herois.length > 0
+  const temBrasa = jogo.brasas > 0 || jogo.reforjas > 0
   // Com mais de 4 recursos a grade vira 2 linhas de ~80 px por chip: ícone 16 px e número menor para caber.
-  const compacta = temAco || temFragmento || temReputacao
+  const compacta = temAco || temFragmento || temReputacao || temBrasa
   const escala = compacta ? 1 : 2
 
   return (
@@ -59,6 +60,7 @@ export function ResourceBar() {
       {temAco && <Chip icone="icone_lingote_aco" valor={jogo.recursos.aco} rotulo="Lingotes de aço" escala={escala} />}
       {temFragmento && <Chip icone="icone_fragmento" valor={jogo.fragmentos} rotulo="Fragmentos rúnicos" escala={escala} />}
       {temReputacao && <Chip icone="icone_reputacao" valor={jogo.reputacao} rotulo="Reputação" escala={escala} />}
+      {temBrasa && <Chip icone="icone_brasa" valor={jogo.brasas} rotulo="Brasas Ancestrais" escala={escala} />}
     </header>
   )
 }

@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { motion, useIsPresent, useReducedMotion } from 'motion/react'
-import { OFFLINE } from '../game/constants.ts'
-import { formatar, formatarDuracao } from '../game/format.ts'
+import { formatar, formatarDuracao, formatarTaxa } from '../game/format.ts'
 import type { ResumoOffline } from '../game/offline.ts'
 import { DEF_EXPEDICAO } from '../game/expedicoes.ts'
 import { QUALIDADES, rotuloQualidade } from '../game/items.ts'
@@ -51,7 +50,7 @@ export function OfflineModal({ resumo, onFechar }: { resumo: ResumoOffline; onFe
         <p className="modal-texto">
           A forja trabalhou por {formatarDuracao(resumo.segundosSimulados)}.
           {resumo.limitadoPeloTeto &&
-            ` Você ficou ${formatarDuracao(resumo.segundosAusente)} fora, mas a forja só rende até ${formatarDuracao(OFFLINE.tetoSegundos)} sozinha.`}
+            ` Você ficou ${formatarDuracao(resumo.segundosAusente)} fora, mas a forja só rende até ${formatarDuracao(resumo.segundosSimulados)} sozinha.`}
         </p>
         <ul className="modal-lista">
           {LINHAS.filter((l) => l.id !== 'aco' || resumo.produzido.aco >= 1).map((l) => (
@@ -100,7 +99,7 @@ export function OfflineModal({ resumo, onFechar }: { resumo: ResumoOffline; onFe
                 <li>
                   <Sprite nome="icone_reputacao" escala={2} />
                   <span>Reputação</span>
-                  <strong>+{formatar(resumo.expedicoes.loot.reputacao)}</strong>
+                  <strong>+{formatarTaxa(resumo.expedicoes.loot.reputacao)}</strong>
                 </li>
               )}
               {resumo.expedicoes.loot.fragmentos > 0 && (

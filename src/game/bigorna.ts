@@ -1,6 +1,7 @@
 // Bigorna: tarefas de forja, fila, modo automático, minigame e conclusão do item.
 // Tudo puro: o aleatório vem de `s.rng` e nunca de Math.random.
 import { tempoForjaBase } from './constants.ts'
+import { multProducaoGlobal } from './bonus.ts'
 import { alvoDe, avaliarBatida, zonasDe } from './batida.ts'
 import { FERREIRO, darXp, ferreiroEm, FERREIROS_DEF, multiplicadorEstacao, nivelFerreiroEm, passivasBigorna } from './ferreiros.ts'
 import {
@@ -39,7 +40,7 @@ export function estoqueDe(s: GameState, material: MaterialId): number {
 /** Segundos para forjar a receita com a bigorna e o ferreiro atuais. */
 export function tempoForjaAtual(s: GameState, receita: ReceitaId): number {
   const base = tempoForjaBase(RECEITAS[receita].segundos, s.niveis.bigorna)
-  return base / multiplicadorEstacao(s, 'bigorna')
+  return base / (multiplicadorEstacao(s, 'bigorna') * multProducaoGlobal(s))
 }
 
 /** Dá para começar agora? (ignora se já há tarefa; veja `forjar` para fila.) */

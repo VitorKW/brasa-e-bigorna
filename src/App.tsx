@@ -4,10 +4,12 @@ import { CombateReplay } from './components/CombateReplay.tsx'
 import { ForgeScreen } from './components/ForgeScreen.tsx'
 import { GuildaScreen } from './components/GuildaScreen.tsx'
 import { MapaScreen } from './components/MapaScreen.tsx'
+import { ReforjarScreen } from './components/ReforjarScreen.tsx'
 import { OfflineModal } from './components/OfflineModal.tsx'
 import { ResourceBar } from './components/ResourceBar.tsx'
 import { SellPanel } from './components/SellPanel.tsx'
 import { TabBar } from './components/TabBar.tsx'
+import { VilarejoScreen } from './components/VilarejoScreen.tsx'
 import { useGame } from './store.ts'
 import { useGameLoop } from './useGameLoop.ts'
 
@@ -25,6 +27,8 @@ export default function App() {
         {aba === 'forja' && <ForgeScreen />}
         {aba === 'guilda' && <GuildaScreen />}
         {aba === 'mapa' && <MapaScreen />}
+        {aba === 'vilarejo' && <VilarejoScreen />}
+        {aba === 'reforjar' && <ReforjarScreen />}
       </main>
       {aba === 'forja' && <SellPanel />}
       <TabBar />

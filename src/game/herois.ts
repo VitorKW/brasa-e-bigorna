@@ -1,5 +1,7 @@
 // Heróis (GDD §3, §4.2 e §5): classes, atributos, nível, equipamento e recrutamento.
 // Tudo puro. Nada aqui sabe de tempo real: o relógio entra por parâmetro nas expedições.
+import { maxHerois } from './bonus.ts'
+import { temConstrucao } from './construcoes.ts'
 import {
   ATRIBUTOS_ZERO,
   SLOTS,
@@ -207,7 +209,7 @@ export function diferencaAtributos(h: Heroi, item: Item): Atributos {
 /**
  * Como cada vaga de herói se abre (GDD §5, adaptado na fatia 3; ver GDD §9):
  * 1ª por moedas, 2ª com reputação (que vem das expedições), 3ª ao derrotar o Golem,
- * 4ª com a Taverna (fatia 4, ainda não existe).
+ * 4ª com a Taverna (construção), 5ª só com o talento "Quinto herói" (fatia 4).
  */
 export const RECRUTAMENTO = {
   /** Achado pelo sim: o primeiro herói chega por volta dos 10 min. */
@@ -220,6 +222,7 @@ export type CondicaoVaga =
   | { tipo: 'reputacao'; minimo: number }
   | { tipo: 'chefe'; chefe: 'golem' }
   | { tipo: 'taverna' }
+  | { tipo: 'talento' }
 
 export interface Vaga {
   /** 0 = primeiro herói. */
@@ -236,13 +239,14 @@ const CONDICOES: readonly CondicaoVaga[] = [
   { tipo: 'reputacao', minimo: RECRUTAMENTO.reputacaoSegundo },
   { tipo: 'chefe', chefe: 'golem' },
   { tipo: 'taverna' },
+  { tipo: 'talento' },
 ]
 
 /** A próxima vaga a abrir, ou null se o grupo está completo. */
 export function proximaVaga(s: GameState): Vaga | null {
   const indice = s.herois.length
   const condicao = CONDICOES[indice]
-  if (!condicao) return null
+  if (!condicao || indice >= maxHerois(s)) return null
   switch (condicao.tipo) {
     case 'moedas':
       return {
@@ -266,7 +270,14 @@ export function proximaVaga(s: GameState): Vaga | null {
         dica: 'Chega ao derrotar o Golem de Escória.',
       }
     case 'taverna':
-      return { indice, condicao, liberada: false, dica: 'Chega com a Taverna, que ainda será construída.' }
+      return {
+        indice,
+        condicao,
+        liberada: temConstrucao(s, 'taverna'),
+        dica: 'Chega com a Taverna, que o vilarejo constrói com reputação.',
+      }
+    case 'talento':
+      return { indice, condicao, liberada: true, dica: 'Um herói a mais, graças ao talento Quinto herói.' }
   }
 }
 

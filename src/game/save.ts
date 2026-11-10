@@ -1,10 +1,12 @@
 import { ESTACOES, ESTACOES_PRODUCAO, RECURSOS, SAVE_VERSION, type EstacaoId } from './constants.ts'
 import { CHEFES, type ChefeId } from './chefe.ts'
+import { CONSTRUCOES, type ConstrucaoId } from './construcoes.ts'
 import { EXPEDICOES, type Expedicao } from './expedicoes.ts'
 import { FERREIROS, podeAlocar, type Ferreiro } from './ferreiros.ts'
 import { CLASSES, equipamentoVazio, type Equipamento, type Heroi } from './herois.ts'
 import { MATERIAIS, QUALIDADES, SLOTS, SLOT_DO_TIPO, TIPOS_ITEM, type Item } from './items.ts'
 import { semente } from './rng.ts'
+import { TALENTOS, type TalentoId } from './talentos.ts'
 import { LIMITE_INVENTARIO_PADRAO, ferreirosIniciais, type Forja, type GameState, type PedidoForja } from './state.ts'
 
 type SaveBruto = Record<string, unknown>
@@ -59,6 +61,18 @@ export const MIGRACOES: Migracoes = {
       chefesDerrotados: [],
     }
   },
+  /**
+   * Fatia 3 -> fatia 4: sem construções, brasas, talentos nem Reforjas. Nada do save antigo muda
+   * (reputação, chefes e heróis ficam como estavam): as construções são compradas depois.
+   */
+  3: (raw) => ({
+    ...raw,
+    version: 4,
+    construcoes: [],
+    brasas: 0,
+    talentos: [],
+    reforjas: 0,
+  }),
 }
 
 const ehNumero = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x)
@@ -232,6 +246,12 @@ export function validarEstado(raw: unknown): GameState | null {
   if (!ehNumero(raw.reputacao) || !ehNumero(raw.fragmentos) || !Array.isArray(raw.chefesDerrotados)) return null
   const chefesDerrotados = CHEFES.filter((c) => (raw.chefesDerrotados as unknown[]).includes(c)) as ChefeId[]
 
+  if (!Array.isArray(raw.construcoes) || !Array.isArray(raw.talentos)) return null
+  if (!ehNumero(raw.brasas) || !ehNumero(raw.reforjas)) return null
+  // Ids desconhecidos (save adulterado ou de versão futura) são descartados, sem repetir.
+  const construcoes = CONSTRUCOES.filter((c) => (raw.construcoes as unknown[]).includes(c)) as ConstrucaoId[]
+  const talentos = TALENTOS.filter((c) => (raw.talentos as unknown[]).includes(c)) as TalentoId[]
+
   return {
     version: SAVE_VERSION,
     lastTick: raw.lastTick,
@@ -256,6 +276,10 @@ export function validarEstado(raw: unknown): GameState | null {
     reputacao: Math.max(0, raw.reputacao),
     fragmentos: Math.max(0, Math.floor(raw.fragmentos)),
     chefesDerrotados,
+    construcoes,
+    brasas: Math.max(0, Math.floor(raw.brasas)),
+    talentos,
+    reforjas: Math.max(0, Math.floor(raw.reforjas)),
   }
 }
 

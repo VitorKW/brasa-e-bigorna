@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { bonusExpedicao } from '../game/bonus.ts'
 import { DEF_CHEFE, chefeDerrotado, preverChefe, type ChefeId } from '../game/chefe.ts'
 import {
   DEF_EXPEDICAO,
@@ -14,7 +15,7 @@ import {
   type ExpedicaoId,
   type RegiaoId,
 } from '../game/expedicoes.ts'
-import { formatar, formatarDuracao } from '../game/format.ts'
+import { formatar, formatarDuracao, formatarTaxa } from '../game/format.ts'
 import { DEF_CLASSE, acharHeroi, emExpedicao, poderHeroi, type Heroi } from '../game/herois.ts'
 import { useGame } from '../store.ts'
 import { Sprite } from './Sprite.tsx'
@@ -80,7 +81,7 @@ function CartaoAndamento({ e }: { e: Expedicao }) {
           <span>+{formatar(e.xp)} XP</span>
           {e.reputacao > 0 && (
             <span>
-              <Sprite nome="icone_reputacao" escala={1} /> +{e.reputacao}
+              <Sprite nome="icone_reputacao" escala={1} /> +{formatarTaxa(e.reputacao)}
             </span>
           )}
           {e.fragmentos > 0 && (
@@ -107,8 +108,11 @@ function CartaoExpedicao({
   liberada: boolean
 }) {
   const enviar = useGame((s) => s.enviarExpedicao)
+  const jogo = useGame((s) => s.jogo)
   const def = DEF_EXPEDICAO[tipo]
-  const prev = heroi ? preverExpedicao(poderHeroi(heroi), DEF_CLASSE[heroi.classe].bonusLoot, tipo) : null
+  const prev = heroi
+    ? preverExpedicao(poderHeroi(heroi), DEF_CLASSE[heroi.classe].bonusLoot, tipo, bonusExpedicao(jogo), jogo.reputacao)
+    : null
   const arriscada = prev !== null && prev.chance < 0.3
 
   return (
@@ -143,7 +147,7 @@ function CartaoExpedicao({
             </span>
             <span>{formatar(prev.xp)} XP</span>
             <span>
-              <Sprite nome="icone_reputacao" escala={1} /> {prev.reputacao}
+              <Sprite nome="icone_reputacao" escala={1} /> {formatarTaxa(prev.reputacao)}
             </span>
             <span>
               <Sprite nome="icone_fragmento" escala={1} /> {pct(prev.chanceFragmento)}
@@ -190,6 +194,7 @@ function Regiao({ id, heroi }: { id: RegiaoId; heroi: Heroi | undefined }) {
         ))}
       </ul>
       {id === 'vale' && <CartaoChefe chefe="golem" />}
+      {id === 'serra' && aberta && <CartaoChefe chefe="serpe" />}
     </section>
   )
 }
@@ -210,7 +215,7 @@ function CartaoChefe({ chefe }: { chefe: ChefeId }) {
   return (
     <article className="chefe painel" aria-label={`Chefe: ${def.nome}`}>
       <div className="chefe-topo">
-        <Sprite nome="chefe_golem" escala={2} rotulo={def.nome} />
+        <Sprite nome={chefe === 'golem' ? 'chefe_golem' : 'chefe_serpe'} escala={2} rotulo={def.nome} />
         <div className="chefe-texto">
           <h3>{def.nome}</h3>
           <span className="estacao-dica">
@@ -225,7 +230,7 @@ function CartaoChefe({ chefe }: { chefe: ChefeId }) {
       ) : (
         <>
           <p className="estacao-dica">
-            Recompensa: {def.reputacao} de reputação, {def.fragmentos} fragmentos e um item lendário.
+            Recompensa: {def.reputacao} de reputação, {def.fragmentos} fragmentos e {def.presente.tipo === 'machado' ? 'um machado lendário' : 'uma armadura lendária de aço'}.
           </p>
           {jogo.herois.length === 0 ? (
             <p className="estacao-dica">Recrute um herói na Guilda para enfrentar o chefe.</p>
@@ -254,7 +259,7 @@ function CartaoChefe({ chefe }: { chefe: ChefeId }) {
                   ? 'Escolha ao menos um herói livre.'
                   : previsao.vitoria
                     ? `Previsão: vitória em ${previsao.rodadas} ${previsao.rodadas === 1 ? 'rodada' : 'rodadas'}.`
-                    : `Previsão: a equipe recua. O Golem ficaria com ${formatar(previsao.pvChefeFinal)} de ${formatar(def.pv)} PV.`}
+                    : `Previsão: a equipe recua. ${def.nome} ficaria com ${formatar(previsao.pvChefeFinal)} de ${formatar(def.pv)} PV.`}
               </p>
               <button
                 type="button"
@@ -262,7 +267,7 @@ function CartaoChefe({ chefe }: { chefe: ChefeId }) {
                 disabled={previsao === null}
                 onClick={() => lutar(chefe, escolhidos)}
               >
-                {previsao?.vitoria ? 'Lutar contra o Golem' : 'Tentar assim mesmo'}
+                {previsao?.vitoria ? `Lutar contra ${chefe === 'golem' ? 'o Golem' : 'a Serpe'}` : 'Tentar assim mesmo'}
               </button>
             </>
           )}

@@ -1,7 +1,9 @@
 import { useEffect, useState, type CSSProperties } from 'react'
+import { CONSTRUCOES, type ConstrucaoId } from '../game/construcoes.ts'
 import { FERREIROS, type FerreiroId } from '../game/ferreiros.ts'
 import { CLASSES, type ClasseId } from '../game/herois.ts'
 import { MATERIAIS, TIPOS_ITEM, type MaterialId, type TipoItem } from '../game/items.ts'
+import { RAMOS, type RamoId } from '../game/talentos.ts'
 
 export type SpriteNome =
   | `item_${TipoItem}_${MaterialId}`
@@ -24,6 +26,10 @@ export type SpriteNome =
   | `heroi_${ClasseId}`
   | `heroi_${ClasseId}_andando`
   | 'chefe_golem'
+  | 'chefe_serpe'
+  | `construcao_${ConstrucaoId}`
+  | `talento_${RamoId}`
+  | 'icone_brasa'
   | 'regiao_vale'
   | 'regiao_serra'
 
@@ -69,8 +75,26 @@ const SPRITES_HEROI = Object.fromEntries(
   ]),
 ) as Record<`heroi_${ClasseId}` | `heroi_${ClasseId}_andando`, Def>
 
+const SPRITES_CONSTRUCAO = Object.fromEntries(
+  CONSTRUCOES.map((c) => [
+    `construcao_${c}`,
+    { w: 32, h: 32, cor: '#4a4350', texto: '#f3e9dc', inicial: c.charAt(0).toUpperCase() } satisfies Def,
+  ]),
+) as Record<`construcao_${ConstrucaoId}`, Def>
+
+const COR_RAMO: Record<RamoId, string> = { fornalheiro: '#e2582a', mestre: '#7d8aa0', capitao: '#6fb1ff' }
+
+const SPRITES_TALENTO = Object.fromEntries(
+  RAMOS.map((r) => [
+    `talento_${r}`,
+    { w: 16, h: 16, cor: COR_RAMO[r], texto: '#1b1618', inicial: r.charAt(0).toUpperCase() } satisfies Def,
+  ]),
+) as Record<`talento_${RamoId}`, Def>
+
 const SPRITES: Record<SpriteNome, Def> = {
   ...SPRITES_ITEM,
+  ...SPRITES_CONSTRUCAO,
+  ...SPRITES_TALENTO,
   ...SPRITES_FERREIRO,
   ...SPRITES_HEROI,
   bigorna: { w: 32, h: 32, cor: '#5b5662', texto: '#f3e9dc', inicial: 'B' },
@@ -89,6 +113,8 @@ const SPRITES: Record<SpriteNome, Def> = {
   forno_aco: { w: 32, h: 32, cor: '#5b6677', texto: '#f3e9dc', inicial: 'A' },
   forno_aco_aceso: { w: 32, h: 32, cor: '#f29a3a', texto: '#1b1618', inicial: 'A', quadros: 4 },
   chefe_golem: { w: 48, h: 48, cor: '#4a3f45', texto: '#f3e9dc', inicial: 'G' },
+  chefe_serpe: { w: 48, h: 48, cor: '#5a4a3c', texto: '#f3e9dc', inicial: 'S' },
+  icone_brasa: { w: 16, h: 16, cor: '#e2582a', texto: '#1b1618', inicial: 'B' },
   regiao_vale: { w: 96, h: 32, cor: '#3f5a3a', texto: '#f3e9dc', inicial: 'Vale' },
   regiao_serra: { w: 96, h: 32, cor: '#4a4f5c', texto: '#f3e9dc', inicial: 'Serra' },
 }

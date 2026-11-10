@@ -1,10 +1,10 @@
 import { useState } from 'react'
+import { maxHerois } from '../game/bonus.ts'
 import { DEF_EXPEDICAO, segundosParaVoltar, voltou } from '../game/expedicoes.ts'
 import { formatar, formatarCusto, formatarDuracao } from '../game/format.ts'
 import {
   CLASSES,
   DEF_CLASSE,
-  HEROI,
   atributosHeroi,
   proximaVaga,
   xpParaNivel,
@@ -98,12 +98,13 @@ function Recrutar() {
   const recrutar = useGame((s) => s.recrutar)
   const [classe, setClasse] = useState<ClasseId>('guerreiro')
   const vaga = proximaVaga(jogo)
+  const maximo = maxHerois(jogo)
 
   if (!vaga) {
     return (
       <section className="secao painel" aria-label="Recrutar">
         <h2>Recrutar</h2>
-        <p className="estacao-dica">O grupo está completo ({HEROI.maximo} heróis).</p>
+        <p className="estacao-dica">O grupo está completo ({maximo} heróis).</p>
       </section>
     )
   }
@@ -116,7 +117,7 @@ function Recrutar() {
       <div className="secao-topo">
         <h2>Recrutar</h2>
         <span className="secao-contagem">
-          {jogo.herois.length}/{HEROI.maximo}
+          {jogo.herois.length}/{maximo}
         </span>
       </div>
       <p className="estacao-dica">{vaga.dica}</p>
@@ -132,7 +133,7 @@ function Recrutar() {
         </>
       )}
 
-      {condicao.tipo !== 'taverna' && (
+      {!(condicao.tipo === 'taverna' && !vaga.liberada) && (
         <div className="classes" role="radiogroup" aria-label="Classe">
           {CLASSES.map((c) => {
             const d = DEF_CLASSE[c]
@@ -154,9 +155,9 @@ function Recrutar() {
         </div>
       )}
 
-      {condicao.tipo === 'taverna' ? (
+      {condicao.tipo === 'taverna' && !vaga.liberada ? (
         <button type="button" className="botao botao-secundario botao-largo" disabled>
-          Aguardando a Taverna
+          Aguardando a Taverna (construa no Vilarejo)
         </button>
       ) : (
         <button

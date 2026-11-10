@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { simular } from './sim.ts'
 
-// Metas do GDD §4.4 que se aplicam às fatias 1 a 3. A sim roda uma vez (leva alguns segundos).
+// Metas do GDD §4.4 das fatias 1 a 3 (jogo contínuo). A sim roda uma vez (leva alguns segundos).
+// As metas de dias (Serpe, construções, Reforjar) estão em sim.dias.test.ts.
 describe('ritmo (simulação gulosa de 2 h)', () => {
   const r = simular(2)
 
@@ -52,6 +53,17 @@ describe('ritmo (simulação gulosa de 2 h)', () => {
     expect(r.expedicoes.enviadas).toBeGreaterThan(20)
     expect(r.expedicoes.sucessos).toBeGreaterThan(r.expedicoes.falhas)
     expect(r.reputacaoFinal).toBeGreaterThan(100)
+  })
+
+  it('o 2º herói (150 de reputação) chega entre 30 e 60 min', () => {
+    expect(r.segundoHeroi).not.toBeNull()
+    expect(r.segundoHeroi!).toBeGreaterThanOrEqual(30 * 60)
+    expect(r.segundoHeroi!).toBeLessThanOrEqual(60 * 60)
+  })
+
+  it('a reputação não infla: jogando 2 h sem parar fica longe dos 1 000 da Muralha (era 765 só com a Trilha)', () => {
+    expect(r.reputacaoFinal).toBeGreaterThan(150)
+    expect(r.reputacaoFinal).toBeLessThan(550)
   })
 
   it('Golem derrotado entre 15 e 40 min (meta: ~20 min)', () => {

@@ -1,8 +1,9 @@
 # Brasa & Bigorna
 
 RPG idle + tycoon mobile (PWA) sobre uma forja de vilarejo de fronteira. Veja o `GDD.md` para a visão completa.
-Estado atual: **Fatia 3** (heróis, equipamento, expedições, o Golem de Escória, a Serra Cinzenta e o Forno de aço),
-sobre a Fatia 2 (Bigorna, itens com qualidade, minigame da batida e ferreiros) e a Fatia 1
+Estado atual: **Fatia 4** (Serpe de Cinza, construções do vilarejo, Reforjar e árvore de talentos),
+sobre a Fatia 3 (heróis, equipamento, expedições, o Golem de Escória, a Serra Cinzenta e o Forno de aço),
+a Fatia 2 (Bigorna, itens com qualidade, minigame da batida e ferreiros) e a Fatia 1
 (Mina, Carvoaria, Fornalha, venda, idle, progresso offline, save e simulador).
 
 ## Como rodar
@@ -13,8 +14,9 @@ npm run dev        # servidor de desenvolvimento
 npm test           # testes (Vitest)
 npm run typecheck  # tsc em modo strict
 npm run build      # tsc -b && vite build
-npm run sim        # simulador de ritmo (2 h por padrão)
-npm run sim -- 8   # simula 8 h
+npm run sim        # simulador: 2 h contínuas e, depois, a sim de dias (~20 s)
+npm run sim -- 8   # só a sim contínua, 8 h
+npm run sim -- dias # só a sim de dias (até o 2º Reforjar)
 ```
 
 Requer Node 22.18 ou superior.
@@ -38,6 +40,10 @@ src/game/        Regras do jogo: funções puras, sem React, sem relógio, sem I
   chefe.ts       combate determinístico por rodadas (devolve o log) e o Golem
   inventario.ts  venda individual e em massa por qualidade
   chain.ts       taxas e análise de gargalo (usadas pela UI e pelo sim)
+  construcoes.ts as 5 obras do vilarejo (reputação + moedas)
+  talentos.ts    a árvore de 12 nós (3 ramos, 4 tiers) e a compra com brasas
+  bonus.ts       todos os multiplicadores permanentes (brasas, talentos, construções) num só lugar
+  reforjar.ts    brasas, prévia e o Reforjar (prestígio)
   save.ts        validação e migração de save por versão
   format.ts      números grandes em pt-BR (1,2 K, 3,4 M, ...)
   sim.ts         simulador guloso
@@ -60,7 +66,7 @@ mostramos. `bigint` não aceita frações (produção de 0,5/s) e complicaria to
 algum valor passar de 1e15; nesse dia trocamos por `break_infinity.js`.
 
 **Save:** `localStorage` com a chave `brasa-e-bigorna:save` (e um backup do save anterior). Grava a cada 5 s e quando a aba
-fica oculta. O formato tem `version`; `src/game/save.ts` tem o registro de migrações (v1 -> v2 -> v3, cada uma com teste) e valida o
+fica oculta. O formato tem `version`; `src/game/save.ts` tem o registro de migrações (v1 -> v2 -> v3 -> v4, cada uma com teste) e valida o
 formato atual (herói com item no espaço errado ou expedição de herói inexistente não corrompem o resto do save).
 
 ## Decisões da Fatia 2
@@ -119,7 +125,40 @@ aço parado. A bigorna ganhou a escolha de material; a fila e o modo automático
 
 **Save v3.** `MIGRACOES[2]` acrescenta forno, aço, material na fila, heróis, expedições, reputação, fragmentos e chefes derrotados.
 
+## Decisões da Fatia 4
+
+**Reputação com retorno decrescente.** A reputação de um sucesso era `5 + 10 × min(1, h/4)` e a Trilha de 2 min rendia 765 em
+2 h. Agora é `17 × horas^0,5 / (1 + reputação/1 000)` (`reputacaoDe` em `expedicoes.ts`): a raiz tira a vantagem das expedições
+curtas e o divisor desacelera quem já tem muita. Não usei teto diário porque o jogo não tem (nem quer) um relógio de dia: ele já
+se defende de relógio adiantado (GDD §4.5). Os números K = 17 e R = 1 000 saíram do sim.
+
+**Bônus em um lugar só.** `bonus.ts` reúne os multiplicadores (brasas, talentos, construções) e as funções que já existiam (`taxas`,
+`tempoForjaAtual`, `vender`, `applyOffline`, `chanceSucesso`, `proximaVaga`...) chamam esse módulo. A UI e o sim leem os mesmos números,
+e cada talento tem teste na função que ele muda. O teto offline virou `tetoOfflineSegundos(estado)` (2 h + Armazém + talentos, máximo 12 h).
+
+**Reforjar é uma função pura.** `reforjar(estado, agora)` devolve o estado novo (ou o MESMO estado, se algo bloqueia: sem Muralha, sem
+brasa para ganhar, herói na estrada). A prévia (`previaReforjar`) é a mesma conta. A UI pede dois passos (preparar e segurar 1,5 s, com ponteiro
+ou Enter/Espaço) e só então chama a store, que grava o save na hora. O que zera e o que fica está no GDD §4.2.
+
+**Talentos que valem na hora.** "Bigorna de herança" não espera o próximo Reforjar: `comprarTalento` sobe a bigorna ao piso 5 na compra
+(`aplicarPiso`) e o Reforjar aplica o mesmo piso.
+
+**Serpe de Cinza.** Mesma função de combate do Golem (`simularCombate`), com `exige: 'golem'` e `chefeDisponivel`. O PV subiu de 25 000
+para 33 000 por causa do sim: com 25 000 ela caía às 3 h; com 33 000 só 4 heróis equipados vencem, então a data depende do preço da Taverna.
+
+**Save v4.** `MIGRACOES[3]` acrescenta `construcoes`, `brasas`, `talentos` e `reforjas` e não toca no resto; `validarEstado` descarta ids
+desconhecidos e repetidos. `moedasGanhas` passou a significar "moedas do ciclo" e zera no Reforjar.
+
 ## Simulador (`npm run sim`)
+
+Fatia 4: o sim também joga **dias**. `simular(horas, passo, { padrao, brasasAlvo, pararEmReforjas })` aceita um padrão de jogador
+(`PADRAO_REALISTA`): as primeiras 2 h de cada ciclo sem parar; depois 16 h acordado por dia com 5 min de sessão a cada 90 min, o resto
+offline pela `applyOffline` de verdade (com o teto, sem comprar nem vender nada) e 8 h de sono. O sim constrói o vilarejo, derrota a Serpe,
+Reforja com 7 brasas e compra talentos por uma lista fixa. `src/game/sim.dias.test.ts` falha se Serpe, reputação, construções, primeiro
+Reforjar (2 a 4 dias, 5 a 15 brasas) ou segundo ciclo (≤ 60 %) saírem da faixa, e se algum valor passar de 1e15. O passo do sim de dias
+nos testes é de 1 s (com 2 s a Taverna às vezes sai um dia depois; ver GDD §4.2). A suíte inteira roda em ~25 s.
+
+## Simulador das fatias 1 a 3
 
 `scripts/sim.ts` roda direto com `node scripts/sim.ts`: o Node 22.18+ remove os tipos TypeScript sozinho, então não precisa
 de `tsx` nem de build. A única regra é escrever os imports com a extensão (`./tick.ts`).
@@ -140,5 +179,7 @@ Os sprites finais ficam em `public/sprites/` (`mina.png`, `carvoaria.png`, `forn
 quadros), `item_<tipo>_<material>.png` (16x16) e `ferreiro_<id>.png` (24x24). A Fatia 3 usa `heroi_<classe>.png` (24x24, classes
 `guerreiro`, `guardia`, `batedor`), `heroi_<classe>_andando.png` (96x24, 4 quadros), `chefe_golem.png` (48x48), `forno_aco.png`
 (32x32), `forno_aco_aceso.png` (128x32, 4 quadros), `icone_lingote_aco.png`, `icone_fragmento.png`, `icone_reputacao.png`
-(16x16) e `regiao_vale.png`, `regiao_serra.png` (banners de 96x32). Enquanto não existirem, o componente `Sprite` mostra um quadrado da paleta
+(16x16) e `regiao_vale.png`, `regiao_serra.png` (banners de 96x32). A Fatia 4 usa `chefe_serpe.png` (48x48),
+`construcao_<id>.png` (32x32; `segunda_fornalha`, `armazem`, `taverna`, `mercado`, `muralha`), `icone_brasa.png` (16x16) e
+`talento_<ramo>.png` (16x16; `fornalheiro`, `mestre`, `capitao`). Enquanto não existirem, o componente `Sprite` mostra um quadrado da paleta
 com a inicial.

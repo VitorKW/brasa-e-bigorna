@@ -1,9 +1,10 @@
+import { tetoOfflineSegundos } from './bonus.ts'
 import { OFFLINE } from './constants.ts'
 import { abandonarMinigame, inventarioCheio } from './bigorna.ts'
 import { COLETA_ZERO, somarColeta, type Coleta, type ExpedicaoId } from './expedicoes.ts'
 import type { Qualidade } from './items.ts'
 import type { GameState } from './state.ts'
-import { PRODUZIDO_ZERO, tickDetalhado, type Produzido } from './tick.ts'
+import { PRODUZIDO_ZERO, tickDetalhado, type Produzido, type ResultadoTick } from './tick.ts'
 
 /** Expedições que voltaram enquanto o app estava fechado (o loot espera a coleta no Mapa). */
 export interface ResumoExpedicoes {
@@ -36,10 +37,13 @@ export interface ResumoOffline {
 export function applyOffline(
   s: GameState,
   now: number,
+  /** Chamado a cada passo simulado (o simulador usa para contar itens e marcos; o jogo não precisa). */
+  observador?: (passo: ResultadoTick) => void,
 ): { estado: GameState; resumo: ResumoOffline } {
   const bruto = (now - s.lastTick) / 1000
   const segundosAusente = Number.isFinite(bruto) && bruto > 0 ? bruto : 0
-  const segundosSimulados = Math.min(segundosAusente, OFFLINE.tetoSegundos)
+  const teto = tetoOfflineSegundos(s)
+  const segundosSimulados = Math.min(segundosAusente, teto)
 
   // Voltaram durante a ausência: o fim cai depois do último tick e até agora. O teto de 2 h só
   // vale para a produção: uma expedição de 8 h volta no relógio, esteja o app aberto ou não.
@@ -62,6 +66,7 @@ export function applyOffline(
     const dt = Math.min(OFFLINE.passoSegundos, restante)
     const r = tickDetalhado(estado, dt)
     estado = r.estado
+    observador?.(r)
     produzido.minerio += r.produzido.minerio
     produzido.carvao += r.produzido.carvao
     produzido.lingote += r.produzido.lingote
@@ -78,7 +83,7 @@ export function applyOffline(
     resumo: {
       segundosAusente,
       segundosSimulados,
-      limitadoPeloTeto: segundosAusente > OFFLINE.tetoSegundos,
+      limitadoPeloTeto: segundosAusente > teto,
       produzido,
       forjados,
       totalForjados,

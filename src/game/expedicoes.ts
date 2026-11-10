@@ -6,6 +6,7 @@
 //   não permite rerrolar (GDD §4.5).
 // - 1 herói por expedição; o grupo todo só se junta para o chefe.
 // - O loot espera a coleta (um toque). Até lá o herói continua "em expedição".
+import { BONUS_EXPEDICAO_ZERO, bonusExpedicao, type BonusExpedicao } from './bonus.ts'
 import { proximo } from './rng.ts'
 import { acharHeroi, darXpHeroi, DEF_CLASSE, emExpedicao, poderHeroi, substituirHeroi } from './herois.ts'
 import type { GameState } from './state.ts'
@@ -64,12 +65,14 @@ export const EXPEDICAO = {
   chanceMin: 0.05,
   chanceMax: 0.95,
   /**
-   * Reputação por sucesso `[suposição]`: 5 nas expedições curtas, subindo até 15 em 4 h ou mais.
-   * Curtas rendem mais por hora, mas exigem presença (GDD §4.5).
+   * Reputação por sucesso (fatia 4, `[suposição]` calibrada pelo sim): `K × horas^0,5 / (1 + reputação / R)`.
+   * A raiz da duração tira a vantagem das expedições curtas e repetidas (a Trilha de 2 min
+   * rendia 765 de reputação em 2 h); o divisor é um retorno decrescente pela reputação acumulada,
+   * para a Muralha (1 000) não ser trivial nem um gargalo absurdo. Ver GDD §4.2 e §4.5.
    */
-  reputacaoMin: 5,
-  reputacaoMax: 15,
-  reputacaoHorasMax: 4,
+  reputacaoK: 17,
+  reputacaoExpoenteHoras: 0.5,
+  reputacaoR: 1000,
 } as const
 
 export interface Expedicao {
@@ -92,9 +95,9 @@ export interface Expedicao {
 
 export const horasDe = (tipo: ExpedicaoId): number => DEF_EXPEDICAO[tipo].segundos / 3600
 
-/** p = limitar(0,5 + (P − D) / (2D), 0,05, 0,95). */
-export function chanceSucesso(poder: number, dificuldade: number): number {
-  const p = 0.5 + (poder - dificuldade) / (2 * dificuldade)
+/** p = limitar(0,5 + (P − D) / (2D) + bônus, 0,05, 0,95). O bônus vem do talento Rota segura. */
+export function chanceSucesso(poder: number, dificuldade: number, bonus = 0): number {
+  const p = 0.5 + (poder - dificuldade) / (2 * dificuldade) + bonus
   return Math.min(EXPEDICAO.chanceMax, Math.max(EXPEDICAO.chanceMin, p))
 }
 
@@ -108,9 +111,13 @@ export function moedasBase(tipo: ExpedicaoId): number {
   )
 }
 
-export function reputacaoDe(tipo: ExpedicaoId): number {
-  const f = Math.min(1, horasDe(tipo) / EXPEDICAO.reputacaoHorasMax)
-  return Math.round(EXPEDICAO.reputacaoMin + (EXPEDICAO.reputacaoMax - EXPEDICAO.reputacaoMin) * f)
+/**
+ * Reputação de um sucesso, dada a reputação que o jogador já tem (retorno decrescente).
+ * `K × horas^0,5 / (1 + reputação / R)`. Pode ser fracionária; a UI mostra uma casa.
+ */
+export function reputacaoDe(tipo: ExpedicaoId, reputacaoAtual = 0): number {
+  const base = EXPEDICAO.reputacaoK * Math.pow(horasDe(tipo), EXPEDICAO.reputacaoExpoenteHoras)
+  return base / (1 + Math.max(0, reputacaoAtual) / EXPEDICAO.reputacaoR)
 }
 
 export function chanceFragmento(tipo: ExpedicaoId, bonusLoot: number): number {
@@ -128,14 +135,20 @@ export interface PrevisaoExpedicao {
 }
 
 /** O que a UI mostra antes de mandar: tudo calculado, nada sorteado. */
-export function preverExpedicao(poder: number, bonusLoot: number, tipo: ExpedicaoId): PrevisaoExpedicao {
+export function preverExpedicao(
+  poder: number,
+  bonusLoot: number,
+  tipo: ExpedicaoId,
+  bonus: BonusExpedicao = BONUS_EXPEDICAO_ZERO,
+  reputacaoAtual = 0,
+): PrevisaoExpedicao {
   const d = DEF_EXPEDICAO[tipo].dificuldade
   return {
-    chance: chanceSucesso(poder, d),
+    chance: chanceSucesso(poder, d, bonus.chance),
     poder,
-    moedas: moedasBase(tipo) * (1 + bonusLoot),
-    xp: d * EXPEDICAO.xpPorDificuldade,
-    reputacao: reputacaoDe(tipo),
+    moedas: moedasBase(tipo) * (1 + bonusLoot) * bonus.loot,
+    xp: d * EXPEDICAO.xpPorDificuldade * bonus.loot,
+    reputacao: reputacaoDe(tipo, reputacaoAtual),
     chanceFragmento: chanceFragmento(tipo, bonusLoot),
   }
 }
@@ -163,7 +176,7 @@ export function partir(s: GameState, heroiId: number, tipo: ExpedicaoId, now: nu
   if (motivoNaoPartir(s, heroiId, tipo) !== null) return s
   const h = acharHeroi(s, heroiId)!
   const bonus = DEF_CLASSE[h.classe].bonusLoot
-  const prev = preverExpedicao(poderHeroi(h), bonus, tipo)
+  const prev = preverExpedicao(poderHeroi(h), bonus, tipo, bonusExpedicao(s), s.reputacao)
 
   const a = proximo(s.rng)
   const b = proximo(a.rng)

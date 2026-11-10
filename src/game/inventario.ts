@@ -1,11 +1,12 @@
 // Venda de itens (individual e em massa por qualidade).
+import { multVenda } from './bonus.ts'
 import type { Qualidade } from './items.ts'
 import type { GameState } from './state.ts'
 
 function aplicarVenda(s: GameState, vendidos: GameState['itens']): { estado: GameState; ganho: number } {
   if (vendidos.length === 0) return { estado: s, ganho: 0 }
   const ids = new Set(vendidos.map((i) => i.id))
-  const ganho = vendidos.reduce((t, i) => t + i.valor, 0)
+  const ganho = vendidos.reduce((t, i) => t + i.valor, 0) * multVenda(s)
   return {
     estado: {
       ...s,

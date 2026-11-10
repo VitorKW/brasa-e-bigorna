@@ -3,6 +3,7 @@ import {
   COMBATE,
   DEF_CHEFE,
   combatenteChefe,
+  chefeDisponivel,
   danoDe,
   equipeDisponivel,
   lutarChefe,
@@ -211,5 +212,77 @@ describe('Golem de Escória', () => {
     const r = lutarChefe(s, 'golem', [])
     expect(r.resultado.vitoria).toBe(false)
     expect(r.estado).toBe(s)
+  })
+})
+
+describe('Serpe de Cinza', () => {
+  /** Quatro heróis com kit de aço épico (o que o sim tem por volta de 12 h) e o Golem já caído. */
+  function equipeDeAco(quantos: number): GameState {
+    let s: GameState = {
+      ...estadoInicial(0, 3),
+      moedas: 1e6,
+      reputacao: 400,
+      chefesDerrotados: ['golem'],
+      construcoes: ['taverna'],
+      limiteInventario: 100,
+    }
+    for (let i = 0; i < quantos; i++) s = recrutar(s, (['guerreiro', 'guardia', 'batedor', 'guerreiro'] as const)[i]!)
+    let id = 1
+    for (const h of s.herois) {
+      const kit: Item['tipo'][] = ['machado', 'escudo', 'armadura', 'elmo']
+      for (const tipo of kit) {
+        s = { ...s, itens: [...s.itens, item(id, tipo, 'epico', 'aco')] }
+        s = equipar(s, h.id, id)
+        id++
+      }
+    }
+    return { ...s, proximoIdItem: id }
+  }
+
+  it('tem os números do GDD (ATQ 220, DEF 120) com PV e VEL ajustados pelo sim', () => {
+    expect(DEF_CHEFE.serpe).toMatchObject({ atq: 220, def: 120, exige: 'golem' })
+    expect(DEF_CHEFE.serpe.pv).toBeGreaterThanOrEqual(25_000)
+    expect(DEF_CHEFE.serpe.vel).toBeGreaterThan(0)
+    expect(combatenteChefe('serpe').pvMax).toBe(DEF_CHEFE.serpe.pv)
+    expect(DEF_CHEFE.serpe.libera).toContain('Muralha')
+  })
+
+  it('só pode ser enfrentada depois do Golem', () => {
+    const s = { ...equipeDeAco(4), chefesDerrotados: [] }
+    expect(chefeDisponivel(s, 'serpe')).toBe(false)
+    const r = lutarChefe(s, 'serpe', [1, 2, 3, 4])
+    expect(r.recompensa).toBeNull()
+    expect(r.estado).toBe(s)
+    expect(chefeDisponivel({ ...s, chefesDerrotados: ['golem'] }, 'serpe')).toBe(true)
+  })
+
+  it('heróis fracos recuam sem perder nada (derrota não custa)', () => {
+    let s: GameState = { ...estadoInicial(0, 3), moedas: 1e6, reputacao: 400, chefesDerrotados: ['golem'] }
+    s = recrutar(recrutar(s, 'guerreiro'), 'guardia')
+    const r = lutarChefe(s, 'serpe', [1, 2])
+    expect(r.resultado.vitoria).toBe(false)
+    expect(r.estado).toBe(s)
+  })
+
+  it('o kit épico de aço de 3 heróis não derruba a Serpe em 30 rodadas, o de 4 sim (a Taverna decide)', () => {
+    expect(preverChefe(equipeDeAco(3), 'serpe', [1, 2, 3]).vitoria).toBe(false)
+    const quatro = preverChefe(equipeDeAco(4), 'serpe', [1, 2, 3, 4])
+    expect(quatro.vitoria).toBe(true)
+    expect(quatro.rodadas).toBeLessThanOrEqual(COMBATE.rodadasMax)
+  })
+
+  it('vitória dá 150 de reputação, 10 fragmentos e uma armadura lendária de aço, e registra o chefe', () => {
+    const s = equipeDeAco(4)
+    const r = lutarChefe(s, 'serpe', [1, 2, 3, 4])
+    expect(r.resultado.vitoria).toBe(true)
+    expect(r.estado.chefesDerrotados).toEqual(['golem', 'serpe'])
+    expect(r.estado.reputacao).toBe(s.reputacao + 150)
+    expect(r.estado.fragmentos).toBe(s.fragmentos + 10)
+    const presente = r.estado.itens.find((i) => i.id === r.recompensa!.presente.id)!
+    expect(presente).toMatchObject({ tipo: 'armadura', material: 'aco', qualidade: 'lendario' })
+    // a previsão é exatamente o que aconteceu
+    expect(r.resultado).toEqual(preverChefe(s, 'serpe', [1, 2, 3, 4]))
+    // e a recompensa não se repete
+    expect(lutarChefe(r.estado, 'serpe', [1, 2, 3, 4]).recompensa).toBeNull()
   })
 })

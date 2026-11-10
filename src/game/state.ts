@@ -1,5 +1,7 @@
 import { MOEDAS_INICIAIS, SAVE_VERSION, type EstacaoId, type RecursoId } from './constants.ts'
 import type { ChefeId } from './chefe.ts'
+import type { ConstrucaoId } from './construcoes.ts'
+import type { TalentoId } from './talentos.ts'
 import type { Expedicao } from './expedicoes.ts'
 import type { Heroi } from './herois.ts'
 import { FERREIROS, type Ferreiro, type FerreiroId } from './ferreiros.ts'
@@ -36,7 +38,7 @@ export interface GameState {
   niveis: Record<EstacaoId, number>
   recursos: Record<RecursoId, number>
   moedas: number
-  /** Total de moedas já ganhas em vendas (base do prestígio, GDD §4.2). */
+  /** Moedas ganhas no CICLO atual (vendas e expedições): a base do prestígio, GDD §4.2. Zera no Reforjar. */
   moedasGanhas: number
 
   /** Estado do gerador de números aleatórios (mulberry32). */
@@ -64,6 +66,15 @@ export interface GameState {
   reputacao: number
   fragmentos: number
   chefesDerrotados: ChefeId[]
+
+  // Fatia 4
+  /** Construções do vilarejo (ficam depois do Reforjar). */
+  construcoes: ConstrucaoId[]
+  /** Brasas Ancestrais NÃO gastas: cada uma dá +2 % de produção; talentos gastam daqui. */
+  brasas: number
+  talentos: TalentoId[]
+  /** Quantas vezes já Reforjou. */
+  reforjas: number
 }
 
 export const LIMITE_INVENTARIO_PADRAO = 30 // [suposição]
@@ -99,5 +110,9 @@ export function estadoInicial(now: number, rng = 20261109): GameState {
     reputacao: 0,
     fragmentos: 0,
     chefesDerrotados: [],
+    construcoes: [],
+    brasas: 0,
+    talentos: [],
+    reforjas: 0,
   }
 }

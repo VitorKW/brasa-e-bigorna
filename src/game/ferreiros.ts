@@ -1,4 +1,5 @@
 // Ferreiros (GDD §5): contratação, alocação, XP e passivas.
+import { bonusQualidadeTalentos, multXpFerreiro } from './bonus.ts'
 import type { EstacaoId } from './constants.ts'
 import type { GameState } from './state.ts'
 
@@ -129,7 +130,7 @@ export function passivasBigorna(s: GameState): {
 } {
   const id = ferreiroEm(s, 'bigorna')
   return {
-    bonusFixo: id === 'cida' ? FERREIRO.bonusCidaQ : 0,
+    bonusFixo: (id === 'cida' ? FERREIRO.bonusCidaQ : 0) + bonusQualidadeTalentos(s),
     multiplicador: id === 'odair' ? 1 + bonusOdair(s.ferreiros.odair.nivel) : 1,
     chanceDuplo: id === 'iara' ? FERREIRO.chanceDuplo : 0,
   }
@@ -146,7 +147,7 @@ export function darXp(s: GameState, estacao: EstacaoId, xp: number): GameState {
   const id = ferreiroEm(s, estacao)
   if (!id) return s
   let { nivel, xp: atual } = s.ferreiros[id]
-  atual += xp
+  atual += xp * multXpFerreiro(s)
   for (;;) {
     if (nivel >= FERREIRO.nivelMax) {
       atual = 0

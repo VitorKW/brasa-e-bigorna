@@ -1,3 +1,4 @@
+import { multVenda } from '../game/bonus.ts'
 import { PRECO_VENDA, type RecursoId } from '../game/constants.ts'
 import { formatar } from '../game/format.ts'
 import { useGame } from '../store.ts'
@@ -13,9 +14,10 @@ const ITENS: { id: RecursoId; rotulo: string; icone: SpriteNome }[] = [
 export function SellPanel() {
   const recursos = useGame((s) => s.jogo.recursos)
   const temAco = useGame((s) => s.jogo.niveis.forno >= 1 || s.jogo.recursos.aco > 0)
+  const mult = useGame((s) => multVenda(s.jogo))
   const lista = ITENS.filter((i) => i.id !== 'aco' || temAco)
   const vender = useGame((s) => s.vender)
-  const valorTotal = lista.reduce((t, i) => t + recursos[i.id] * PRECO_VENDA[i.id], 0)
+  const valorTotal = lista.reduce((t, i) => t + recursos[i.id] * PRECO_VENDA[i.id] * mult, 0)
 
   return (
     <section className="vender painel" aria-label="Vender">
@@ -30,7 +32,7 @@ export function SellPanel() {
           >
             <Sprite nome={i.icone} escala={1} />
             <span>Vender {i.rotulo}</span>
-            <span className="botao-sub">+{formatar(recursos[i.id] * PRECO_VENDA[i.id])}</span>
+            <span className="botao-sub">+{formatar(recursos[i.id] * PRECO_VENDA[i.id] * mult)}</span>
           </button>
         ))}
         <button

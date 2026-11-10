@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { multVenda } from '../game/bonus.ts'
 import { formatar } from '../game/format.ts'
 import { contarPorQualidade } from '../game/inventario.ts'
 import {
@@ -23,14 +24,15 @@ const PLURAL: Record<Qualidade, string> = {
 
 const ordemQualidade = (q: Qualidade) => QUALIDADES.indexOf(q)
 
-function Linha({ item, onVender }: { item: Item; onVender: (id: number) => void }) {
+function Linha({ item, mult, onVender }: { item: Item; mult: number; onVender: (id: number) => void }) {
+  const valor = item.valor * mult
   const cor = COR_QUALIDADE[item.qualidade]
   const qual = nomeQualidade(item.qualidade, item.tipo)
   return (
     <li
       className="item"
       style={{ borderColor: cor }}
-      aria-label={`${nomeItem(item)}, ${qual}, forjada por ${item.ferreiro}, vale ${formatar(item.valor)} moedas`}
+      aria-label={`${nomeItem(item)}, ${qual}, forjada por ${item.ferreiro}, vale ${formatar(valor)} moedas`}
     >
       <Sprite nome={`item_${item.tipo}_${item.material}`} escala={2} />
       <div className="item-texto">
@@ -44,10 +46,10 @@ function Linha({ item, onVender }: { item: Item; onVender: (id: number) => void 
         type="button"
         className="botao botao-secundario item-vender"
         onClick={() => onVender(item.id)}
-        aria-label={`Vender ${nomeItem(item)} por ${formatar(item.valor)} moedas`}
+        aria-label={`Vender ${nomeItem(item)} por ${formatar(valor)} moedas`}
       >
         <Sprite nome="icone_moeda" escala={1} />
-        {formatar(item.valor)}
+        {formatar(valor)}
       </button>
     </li>
   )
@@ -55,6 +57,7 @@ function Linha({ item, onVender }: { item: Item; onVender: (id: number) => void 
 
 export function ItensPanel() {
   const itens = useGame((s) => s.jogo.itens)
+  const mult = useGame((s) => multVenda(s.jogo))
   const limite = useGame((s) => s.jogo.limiteInventario)
   const venderItem = useGame((s) => s.venderItem)
   const venderItens = useGame((s) => s.venderItens)
@@ -64,7 +67,7 @@ export function ItensPanel() {
     [itens],
   )
   const contagem = contarPorQualidade(itens)
-  const total = itens.reduce((t, i) => t + i.valor, 0)
+  const total = itens.reduce((t, i) => t + i.valor, 0) * mult
   const cheio = itens.length >= limite
 
   return (
@@ -94,7 +97,7 @@ export function ItensPanel() {
                   Vender {PLURAL[q]} ({contagem[q]})
                 </span>
                 <span className="botao-sub">
-                  +{formatar(itens.filter((i) => i.qualidade === q).reduce((t, i) => t + i.valor, 0))}
+                  +{formatar(itens.filter((i) => i.qualidade === q).reduce((t, i) => t + i.valor, 0) * mult)}
                 </span>
               </button>
             ))}
@@ -105,7 +108,7 @@ export function ItensPanel() {
           </div>
           <ul className="itens">
             {ordenados.map((i) => (
-              <Linha key={i.id} item={i} onVender={venderItem} />
+              <Linha key={i.id} item={i} mult={mult} onVender={venderItem} />
             ))}
           </ul>
         </>

@@ -7,6 +7,7 @@ import {
   velocidadeForno,
   type EstacaoProducao,
 } from './constants.ts'
+import { multForno, multFornalha, multMinaCarvoaria, multProducaoGlobal } from './bonus.ts'
 import { multiplicadorEstacao } from './ferreiros.ts'
 import type { GameState } from './state.ts'
 
@@ -24,15 +25,16 @@ export interface Taxas {
 }
 
 export function taxas(s: GameState): Taxas {
-  const minerio = producaoMina(s.niveis.mina) * multiplicadorEstacao(s, 'mina')
-  const carvao = producaoCarvoaria(s.niveis.carvoaria) * multiplicadorEstacao(s, 'carvoaria')
-  const fornalha = velocidadeFornalha(s.niveis.fornalha) * multiplicadorEstacao(s, 'fornalha')
+  const g = multProducaoGlobal(s)
+  const minerio = producaoMina(s.niveis.mina) * multiplicadorEstacao(s, 'mina') * g * multMinaCarvoaria(s)
+  const carvao = producaoCarvoaria(s.niveis.carvoaria) * multiplicadorEstacao(s, 'carvoaria') * g * multMinaCarvoaria(s)
+  const fornalha = velocidadeFornalha(s.niveis.fornalha) * multiplicadorEstacao(s, 'fornalha') * g * multFornalha(s)
   const lingote = Math.min(
     fornalha,
     minerio / RECEITA_LINGOTE.minerio,
     carvao / RECEITA_LINGOTE.carvao,
   )
-  const forno = velocidadeForno(s.niveis.forno) * multiplicadorEstacao(s, 'forno')
+  const forno = velocidadeForno(s.niveis.forno) * multiplicadorEstacao(s, 'forno') * g * multForno(s)
   const carvaoLivre = Math.max(0, carvao - RECEITA_LINGOTE.carvao * lingote)
   const aco = Math.min(forno, lingote / RECEITA_ACO.lingote, carvaoLivre / RECEITA_ACO.carvao)
   return { minerio, carvao, fornalha, lingote, forno, aco }

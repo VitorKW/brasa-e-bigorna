@@ -7,6 +7,7 @@ import {
   removerDaFila as removerDaFilaRegra,
   type Forjado,
 } from './game/bigorna.ts'
+import { construir as construirRegra, type ConstrucaoId } from './game/construcoes.ts'
 import { lutarChefe, type ChefeId, type RecompensaChefe, type ResultadoCombate } from './game/chefe.ts'
 import {
   coletar as coletarRegra,
@@ -19,11 +20,13 @@ import { desequipar as desequiparRegra, equipar as equiparRegra, recrutar as rec
 import { alocar as alocarRegra, contratar as contratarRegra, type FerreiroId } from './game/ferreiros.ts'
 import { venderItem as venderItemRegra, venderPorQualidade } from './game/inventario.ts'
 import type { MaterialId, Qualidade, ReceitaId, Slot } from './game/items.ts'
+import { brasasDoCiclo, moedasDoCicloComPendentes, reforjar as reforjarRegra } from './game/reforjar.ts'
 import { semente } from './game/rng.ts'
 import { comprarUpgrade, vender as venderRegra } from './game/economy.ts'
 import { applyOffline, type ResumoOffline } from './game/offline.ts'
 import { desserializar, serializar } from './game/save.ts'
 import { estadoInicial, type GameState } from './game/state.ts'
+import { comprarTalento as comprarTalentoRegra, type TalentoId } from './game/talentos.ts'
 import { tickDetalhado } from './game/tick.ts'
 
 const CHAVE_SAVE = 'brasa-e-bigorna:save'
@@ -56,7 +59,7 @@ function gravarSave(estado: GameState): void {
   }
 }
 
-export type AbaId = 'forja' | 'guilda' | 'mapa'
+export type AbaId = 'forja' | 'guilda' | 'mapa' | 'vilarejo' | 'reforjar'
 
 /** Resultado de uma luta contra o chefe, para o replay. A recompensa já foi aplicada ao jogo. */
 export interface CombateAtivo {
@@ -80,6 +83,8 @@ interface Store {
   combate: CombateAtivo | null
   /** Última coleta de expedições (a UI faz os números subirem). */
   ultimaColeta: { id: number; coleta: Coleta } | null
+  /** Último Reforjar (a tela mostra o que rendeu). Só UI; não vai para o save. */
+  ultimoReforjar: { id: number; brasas: number } | null
   irPara: (aba: AbaId) => void
   avancar: (now: number) => void
   melhorar: (estacao: EstacaoId) => void
@@ -104,6 +109,9 @@ interface Store {
   coletarTodas: () => void
   lutar: (chefe: ChefeId, heroiIds: number[]) => void
   fecharCombate: () => void
+  construir: (id: ConstrucaoId) => void
+  comprarTalento: (id: TalentoId) => void
+  reforjar: () => void
 }
 
 function iniciar(): Pick<Store, 'jogo' | 'resumoOffline'> {
@@ -124,6 +132,7 @@ let contadorForjado = 0
 let contadorBatida = 0
 let contadorColeta = 0
 let contadorCombate = 0
+let contadorReforjar = 0
 
 export const useGame = create<Store>((set, get) => ({
   aba: 'forja',
@@ -133,8 +142,9 @@ export const useGame = create<Store>((set, get) => ({
   batidaAtiva: null,
   combate: null,
   ultimaColeta: null,
+  ultimoReforjar: null,
 
-  irPara: (aba) => set({ aba }),
+  irPara: (aba) => set({ aba, ultimoReforjar: null }),
 
   avancar: (now) => {
     const { jogo } = get()
@@ -268,4 +278,27 @@ export const useGame = create<Store>((set, get) => ({
   },
 
   fecharCombate: () => set({ combate: null }),
+
+  construir: (id) => {
+    const { jogo } = get()
+    const novo = construirRegra(jogo, id)
+    if (novo !== jogo) set({ jogo: novo })
+  },
+
+  comprarTalento: (id) => {
+    const { jogo } = get()
+    const novo = comprarTalentoRegra(jogo, id)
+    if (novo !== jogo) set({ jogo: novo })
+  },
+
+  // Reforjar é a ação mais forte do jogo: a UI só chama depois da confirmação (segurar o botão).
+  reforjar: () => {
+    const { jogo } = get()
+    const agora = Date.now()
+    const brasas = brasasDoCiclo(moedasDoCicloComPendentes(jogo, agora))
+    const novo = reforjarRegra(jogo, agora)
+    if (novo === jogo) return
+    set({ jogo: novo, ultimoReforjar: { id: ++contadorReforjar, brasas }, batidaAtiva: null, combate: null })
+    gravarSave(novo)
+  },
 }))

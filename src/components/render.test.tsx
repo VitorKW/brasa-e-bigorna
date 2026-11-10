@@ -14,6 +14,8 @@ import { GuildaScreen } from './GuildaScreen.tsx'
 import { MapaScreen } from './MapaScreen.tsx'
 import { ResourceBar } from './ResourceBar.tsx'
 import { TabBar } from './TabBar.tsx'
+import { ReforjarScreen } from './ReforjarScreen.tsx'
+import { VilarejoScreen } from './VilarejoScreen.tsx'
 
 // Teste de fumaça: renderiza no servidor (sem navegador) para pegar erros de render
 // e conferir os textos principais. Não substitui testar no celular.
@@ -202,5 +204,103 @@ describe('replay do combate', () => {
       <CombateReplay combate={{ id: 1, chefe: 'golem', resultado: r.resultado, recompensa: r.recompensa }} />,
     )
     for (const texto of ['Golem de Escória', 'Pular', 'Rodada 1', 'Bento', 'Dalva']) expect(html, texto).toContain(texto)
+  })
+})
+
+/** renderToString separa textos vizinhos com comentários do React; aqui tiramos para comparar frases. */
+const html = (el: React.ReactElement): string => renderToString(el).replace(/<!-- -->/g, '')
+
+describe('aba Vilarejo', () => {
+  it('lista as 5 construções com o efeito, a reputação que falta e o espaço das encomendas', () => {
+    comEstado({ ...meioDeJogo(), reputacao: 60 })
+    const saida = html(<VilarejoScreen />)
+    for (const texto of ['Segunda fornalha', 'Armazém', 'Taverna', 'Mercado', 'Muralha', 'Fornalha 50 % mais rápida', '/150 de reputação', 'Encomendas', 'em breve']) {
+      expect(saida, texto).toContain(texto)
+    }
+    expect(saida).toContain('não se gasta')
+  })
+
+  it('com reputação e moedas o botão de construir fica ativo; sem moedas, não', () => {
+    comEstado({ ...meioDeJogo(), reputacao: 60, moedas: 1e9 })
+    const ativo = html(<VilarejoScreen />)
+    expect(ativo).toContain('aria-label="Construir Segunda fornalha por 3 K moedas"')
+    expect(ativo).not.toMatch(/aria-label="Construir Segunda fornalha[^>]*disabled/)
+    comEstado({ ...meioDeJogo(), reputacao: 60, moedas: 5 })
+    expect(html(<VilarejoScreen />)).toMatch(/disabled=""[^>]*aria-label="Construir Segunda fornalha|aria-label="Construir Segunda fornalha[^>]*disabled=""/)
+  })
+
+  it('construída aparece como tal; a Muralha pede a Serpe', () => {
+    comEstado({ ...meioDeJogo(true), reputacao: 1500, construcoes: ['armazem'] })
+    const saida = html(<VilarejoScreen />)
+    expect(saida).toContain('Construída.')
+    expect(saida).toContain('Antes, derrote Serpe de Cinza no Mapa.')
+  })
+})
+
+describe('aba Reforjar', () => {
+  it('trancada até a Muralha: explica o que falta e mostra a árvore de talentos', () => {
+    comEstado(meioDeJogo(true))
+    const saida = html(<ReforjarScreen />)
+    for (const texto of ['trancado', 'Derrotar a Serpe de Cinza', 'Construir a Muralha', 'Talentos', 'Fornalheiro', 'Mestre de forja', 'Capitão da guilda']) {
+      expect(saida, texto).toContain(texto)
+    }
+    expect(saida).not.toContain('Preparar o Reforjar')
+    expect(html(<TabBar />)).toContain('trancada')
+  })
+
+  it('com a Muralha: prévia com brasas, o que perde e o que fica, e confirmação em dois passos', () => {
+    comEstado({ ...meioDeJogo(true), construcoes: ['muralha'], moedasGanhas: 64e6 })
+    const saida = html(<ReforjarScreen />)
+    for (const texto of ['Prévia do Reforjar', '+8', 'O que se perde', 'O que fica', 'Preparar o Reforjar', 'Brasas Ancestrais e talentos']) {
+      expect(saida, texto).toContain(texto)
+    }
+    // o botão de segurar só aparece depois do primeiro passo
+    expect(saida).not.toContain('Segurar para Reforjar')
+    expect(html(<TabBar />)).not.toContain('trancada')
+  })
+
+  it('sem brasas para ganhar, o botão fica desligado e o motivo aparece', () => {
+    comEstado({ ...meioDeJogo(true), construcoes: ['muralha'], moedasGanhas: 10 })
+    const saida = html(<ReforjarScreen />)
+    expect(saida).toContain('ainda não rende nenhuma brasa')
+    expect(saida).toMatch(/disabled=""[^>]*>Preparar o Reforjar/)
+  })
+
+  it('12 talentos: custos 1, 2, 3 e 5 e pré-requisito visível', () => {
+    comEstado({ ...meioDeJogo(true), brasas: 3 })
+    const saida = html(<ReforjarScreen />)
+    for (const nome of ['Foles novos', 'Sono tranquilo', 'Veios generosos', 'Fogo ancestral', 'Mão firme', 'Bigorna de herança', 'Escola de ofício', 'Obra-prima', 'Bandeira da guilda', 'Quinto herói', 'Rota segura', 'Vigias da noite']) {
+      expect(saida, nome).toContain(nome)
+    }
+    expect(saida).toContain('Exige Foles novos.')
+    expect(saida).toContain('aria-label="Aprender Foles novos por 1 brasa"')
+    expect(saida).toContain('aria-label="Aprender Fogo ancestral por 5 brasas"')
+  })
+
+  it('talento comprado aparece como aprendido', () => {
+    comEstado({ ...meioDeJogo(true), talentos: ['fornalheiro_1'] })
+    expect(html(<ReforjarScreen />)).toContain('Aprendido')
+  })
+})
+
+describe('Serpe de Cinza no Mapa', () => {
+  it('só aparece com a Serra aberta, com previsão e a recompensa', () => {
+    comEstado(meioDeJogo())
+    expect(html(<MapaScreen />)).not.toContain('Serpe de Cinza')
+    comEstado(meioDeJogo(true))
+    const saida = html(<MapaScreen />)
+    for (const texto of ['Serpe de Cinza', 'PV 33 K', 'a Muralha e o Reforjar', 'Tentar assim mesmo', 'armadura lendária de aço']) {
+      expect(saida, texto).toContain(texto)
+    }
+    expect(saida).toContain('Previsão: a equipe recua. Serpe de Cinza ficaria com')
+  })
+})
+
+describe('brasas na barra de recursos', () => {
+  it('só aparecem depois da primeira brasa', () => {
+    comEstado(meioDeJogo())
+    expect(html(<ResourceBar />)).not.toContain('Brasas Ancestrais')
+    comEstado({ ...meioDeJogo(), brasas: 7 })
+    expect(html(<ResourceBar />)).toContain('Brasas Ancestrais: 7')
   })
 })

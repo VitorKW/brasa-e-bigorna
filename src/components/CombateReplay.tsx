@@ -35,7 +35,7 @@ function Lutador({
     <div className={`lutador ${c.lado} ${caido ? 'caido' : ''}`}>
       <div className="lutador-arte">
         {c.lado === 'chefe' ? (
-          <Sprite nome="chefe_golem" escala={3} rotulo={c.nome} />
+          <Sprite nome={c.id === 'serpe' ? 'chefe_serpe' : 'chefe_golem'} escala={3} rotulo={c.nome} />
         ) : (
           <Sprite nome={caido ? `heroi_${c.classe!}` : `heroi_${c.classe!}_andando`} escala={3} rotulo={c.nome} fps={5} />
         )}
@@ -164,7 +164,7 @@ export function CombateReplay({ combate }: { combate: CombateAtivo }) {
                 <p className="modal-texto">
                   {resultado.sobreviventes === 0
                     ? 'Todos caíram antes de vencer.'
-                    : `Passaram ${resultado.rodadas} rodadas e o Golem ainda tinha ${formatar(resultado.pvChefeFinal)} PV.`}{' '}
+                    : `Passaram ${resultado.rodadas} rodadas e ${def.nome} ainda tinha ${formatar(resultado.pvChefeFinal)} PV.`}{' '}
                   Melhore o equipamento e tente de novo.
                 </p>
               </>

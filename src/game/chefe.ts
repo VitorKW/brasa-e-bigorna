@@ -4,7 +4,7 @@ import { atributosHeroi, emExpedicao, type ClasseId } from './herois.ts'
 import { valorItem, type Item, type MaterialId, type Qualidade, type TipoItem } from './items.ts'
 import type { GameState } from './state.ts'
 
-export const CHEFES = ['golem'] as const
+export const CHEFES = ['golem', 'serpe'] as const
 export type ChefeId = (typeof CHEFES)[number]
 
 export interface DefChefe {
@@ -13,6 +13,8 @@ export interface DefChefe {
   atq: number
   def: number
   vel: number
+  /** Chefe que precisa ter caído antes (a Serpe vive na Serra, que abre com o Golem). */
+  exige: ChefeId | null
   /** Recompensa da primeira vitória. */
   reputacao: number
   fragmentos: number
@@ -28,6 +30,7 @@ export const COMBATE = {
 export const DEF_CHEFE: Record<ChefeId, DefChefe> = {
   golem: {
     nome: 'Golem de Escória',
+    exige: null,
     // GDD §4.2: PV 2 000, ATQ 40, DEF 20. O PV foi ajustado pelo sim (ver GDD).
     pv: 1500,
     atq: 40,
@@ -37,6 +40,19 @@ export const DEF_CHEFE: Record<ChefeId, DefChefe> = {
     fragmentos: 5,
     presente: { tipo: 'machado', material: 'ferro', qualidade: 'lendario', origem: 'Espólio do Golem' },
     libera: 'a Serra Cinzenta e o Forno de aço',
+  },
+  serpe: {
+    nome: 'Serpe de Cinza',
+    exige: 'golem',
+    // GDD §4.2: PV 25 000, ATQ 220, DEF 120. Ajustado pelo sim: PV 33 000 e VEL 12 (ver GDD).
+    pv: 33_000,
+    atq: 220,
+    def: 120,
+    vel: 12,
+    reputacao: 150,
+    fragmentos: 10,
+    presente: { tipo: 'armadura', material: 'aco', qualidade: 'lendario', origem: 'Escamas da Serpe' },
+    libera: 'a Muralha e o Reforjar',
   },
 }
 
@@ -126,6 +142,12 @@ export function simularCombate(
   }
 }
 
+/** O chefe pode ser enfrentado? (a Serpe só depois do Golem) */
+export function chefeDisponivel(s: GameState, chefe: ChefeId): boolean {
+  const exige = DEF_CHEFE[chefe].exige
+  return exige === null || s.chefesDerrotados.includes(exige)
+}
+
 export function combatenteChefe(id: ChefeId): Combatente {
   const d = DEF_CHEFE[id]
   return { id, nome: d.nome, lado: 'chefe', pv: d.pv, pvMax: d.pv, atq: d.atq, def: d.def, vel: d.vel }
@@ -173,7 +195,7 @@ export function lutarChefe(
   heroiIds: readonly number[],
 ): { estado: GameState; resultado: ResultadoCombate; recompensa: RecompensaChefe | null } {
   const resultado = preverChefe(s, chefe, heroiIds)
-  if (!resultado.vitoria || s.chefesDerrotados.includes(chefe) || resultado.equipe.length === 0) {
+  if (!chefeDisponivel(s, chefe) || !resultado.vitoria || s.chefesDerrotados.includes(chefe) || resultado.equipe.length === 0) {
     return { estado: s, resultado, recompensa: null }
   }
   const def = DEF_CHEFE[chefe]

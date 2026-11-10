@@ -1752,3 +1752,239 @@ p {
     transition: none;
   }
 }
+
+/* Fatia 4: Vilarejo, Reforjar e talentos. */
+.aba.trancada .aba-nome {
+  color: var(--texto-suave);
+}
+
+.construcoes,
+.nos,
+.requisitos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.construcao {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-left-width: 6px;
+  border-left-color: var(--laranja);
+}
+
+.construcao.fechada {
+  border-left-color: var(--aco);
+}
+
+.construcao.feita {
+  border-left-color: var(--amarelo);
+}
+
+.construcao-topo {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.construcao-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.construcao-texto h3,
+.ramo-topo h3,
+.previa-listas h3 {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.construcao-efeito {
+  font-weight: 600;
+  color: var(--amarelo);
+  font-size: 16px;
+}
+
+.requisito {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--texto-suave);
+}
+
+.requisito.ok {
+  color: var(--texto);
+}
+
+.requisito-estado {
+  min-width: 52px;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--laranja);
+}
+
+.requisito.ok .requisito-estado {
+  color: var(--amarelo);
+}
+
+.previa-brasas {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.previa-brasas > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.previa-numero {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 1;
+  color: var(--amarelo);
+  font-variant-numeric: tabular-nums;
+}
+
+.previa-listas {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.previa-listas ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 15px;
+  color: var(--texto-suave);
+}
+
+.confirmar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--carvao);
+  border: 1px solid var(--brasa);
+  border-radius: var(--raio);
+}
+
+.segurar {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.segurar-enchimento {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--brasa);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.segurar-texto {
+  position: relative;
+}
+
+.ramo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+}
+
+.ramo-topo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.no {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--carvao);
+  border: 1px solid var(--aco);
+  border-radius: var(--raio);
+}
+
+.no.comprado {
+  border-color: var(--amarelo);
+}
+
+.no.bloqueado {
+  opacity: 0.7;
+}
+
+.no-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.no-nome {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.no-nome small {
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+
+.no-desc {
+  font-size: 15px;
+  color: var(--texto-suave);
+}
+
+.no-botao {
+  min-width: 64px;
+  gap: 4px;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.no-estado {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  color: var(--amarelo);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segurar-enchimento {
+    transition: none;
+  }
+}

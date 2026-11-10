@@ -64,14 +64,16 @@ export const PRECO_VENDA: Record<RecursoId, number> = {
 export const NIVEIS_MARCO = [10, 25, 50, 100] as const
 
 export const OFFLINE = {
+  /** Teto base (2 h). O Armazém e os talentos somam horas, no máximo 12 h no total (bonus.ts). */
   tetoSegundos: 2 * 60 * 60,
+  tetoMaximoSegundos: 12 * 60 * 60,
   passoSegundos: 10,
   /** Abaixo disso o modal "Enquanto você estava fora" não aparece. */
   minimoModalSegundos: 30,
 } as const
 
 export const MOEDAS_INICIAIS = 10
-export const SAVE_VERSION = 3
+export const SAVE_VERSION = 4
 
 /** marco(n) = 2 ^ (quantidade de marcos já atingidos). */
 export function marco(n: number): number {

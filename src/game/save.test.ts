@@ -95,7 +95,7 @@ describe('save', () => {
     expect(desserializar(JSON.stringify(s))).toBeNull()
   })
 
-  it('migra o save da fatia 2 (v2) para a v3 sem perder nada', () => {
+  it('migra o save da fatia 2 (v2) para a v4 sem perder nada', () => {
     const item = { id: 4, tipo: 'elmo', material: 'ferro', qualidade: 'raro', ferreiro: 'Dona Cida', valor: 75, pontuacao: 52 }
     const v2 = {
       version: 2,
@@ -116,7 +116,7 @@ describe('save', () => {
     }
     const s = desserializar(JSON.stringify(v2))
     expect(s).not.toBeNull()
-    expect(s!.version).toBe(3)
+    expect(s!.version).toBe(SAVE_VERSION)
     // o que já existia continua igual
     expect(s!.niveis).toEqual({ ...v2.niveis, forno: 0 })
     expect(s!.recursos).toEqual({ ...v2.recursos, aco: 0 })
@@ -138,6 +138,10 @@ describe('save', () => {
     expect(s!.fragmentos).toBe(0)
     expect(s!.chefesDerrotados).toEqual([])
     expect(s!.proximoIdHeroi).toBe(1)
+    expect(s!.construcoes).toEqual([])
+    expect(s!.talentos).toEqual([])
+    expect(s!.brasas).toBe(0)
+    expect(s!.reforjas).toBe(0)
     // e o resultado volta a ser lido sem migração
     expect(desserializar(serializar(s!))).toEqual(s)
   })
@@ -195,5 +199,87 @@ describe('save', () => {
       expedicoes: [{ id: 1, heroi: 9, tipo: 'trilha', inicio: 0, fim: 1, sucesso: true, chance: 1, moedas: 1, xp: 1, reputacao: 5, fragmentos: 0 }],
     }
     expect(desserializar(JSON.stringify(s))!.expedicoes).toEqual([])
+  })
+})
+
+describe('save v4 (fatia 4)', () => {
+  const v3 = (): Record<string, unknown> => {
+    const { construcoes, brasas, talentos, reforjas, ...resto } = estadoInicial(1_700_000_000_000, 5)
+    void construcoes
+    void brasas
+    void talentos
+    void reforjas
+    return {
+      ...resto,
+      version: 3,
+      moedas: 777.5,
+      moedasGanhas: 123_456,
+      reputacao: 480,
+      fragmentos: 9,
+      chefesDerrotados: ['golem'],
+      herois: [
+        { id: 1, nome: 'Bento', classe: 'guerreiro', nivel: 7, xp: 3, equipamento: { arma: null, escudo: null, armadura: null, elmo: null } },
+      ],
+      proximoIdHeroi: 2,
+    }
+  }
+
+  it('MIGRACOES[3] acrescenta construções, brasas, talentos e Reforjas e não mexe no resto', () => {
+    const antigo = v3()
+    const s = desserializar(JSON.stringify(antigo))
+    expect(s).not.toBeNull()
+    expect(s!.version).toBe(4)
+    expect(s!.construcoes).toEqual([])
+    expect(s!.brasas).toBe(0)
+    expect(s!.talentos).toEqual([])
+    expect(s!.reforjas).toBe(0)
+    // o progresso da v3 continua igual: reputação, chefes, herói, moedas do ciclo
+    expect(s!.reputacao).toBe(480)
+    expect(s!.chefesDerrotados).toEqual(['golem'])
+    expect(s!.herois[0]!.nivel).toBe(7)
+    expect(s!.moedas).toBe(777.5)
+    expect(s!.moedasGanhas).toBe(123_456)
+    expect(desserializar(serializar(s!))).toEqual(s)
+  })
+
+  it('cadeia completa: um save v1 chega à v4', () => {
+    const v1 = { version: 1, lastTick: 5, niveis: { mina: 3, carvoaria: 2, fornalha: 2 }, recursos: { minerio: 1, carvao: 1, lingote: 1, aco: 0 }, moedas: 5, moedasGanhas: 5 }
+    const s = desserializar(JSON.stringify(v1))
+    expect(s?.version).toBe(4)
+    expect(s?.construcoes).toEqual([])
+  })
+
+  it('ida e volta com construções, talentos, brasas e Serpe derrotada', () => {
+    const s: GameState = {
+      ...estadoInicial(9, 3),
+      construcoes: ['segunda_fornalha', 'armazem', 'muralha'],
+      talentos: ['fornalheiro_1', 'fornalheiro_2', 'mestre_1'],
+      brasas: 4,
+      reforjas: 2,
+      chefesDerrotados: ['golem', 'serpe'],
+      reputacao: 1234.5,
+    }
+    expect(desserializar(serializar(s))).toEqual(s)
+  })
+
+  it('ids de construção e talento desconhecidos são descartados, sem repetir', () => {
+    const s = {
+      ...estadoInicial(9, 3),
+      construcoes: ['armazem', 'armazem', 'castelo'],
+      talentos: ['mestre_1', 'x_9', 'mestre_1'],
+      chefesDerrotados: ['golem', 'dragao'],
+    }
+    const lido = desserializar(JSON.stringify(s))!
+    expect(lido.construcoes).toEqual(['armazem'])
+    expect(lido.talentos).toEqual(['mestre_1'])
+    expect(lido.chefesDerrotados).toEqual(['golem'])
+  })
+
+  it('v4 sem os campos novos ou com brasas inválidas é rejeitado', () => {
+    const ok = estadoInicial(9, 3)
+    const { talentos, ...semTalentos } = ok
+    void talentos
+    expect(desserializar(JSON.stringify(semTalentos))).toBeNull()
+    expect(desserializar(JSON.stringify({ ...ok, brasas: 'muitas' }))).toBeNull()
   })
 })
