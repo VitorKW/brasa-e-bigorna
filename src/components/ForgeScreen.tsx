@@ -109,6 +109,7 @@ function Producao() {
       <section className="cadeia" aria-label="Estações da forja">
         <StationCard
           nome="Mina"
+          visual="mina"
           sprite="mina"
           nivel={n.mina}
           saida={{ icone: 'icone_minerio', rotulo: 'minério', porSegundo: producaoMina(n.mina) * mult('mina') }}
@@ -123,6 +124,7 @@ function Producao() {
         <div className="espaco-cadeia" />
         <StationCard
           nome="Carvoaria"
+          visual="carvoaria"
           sprite="carvoaria"
           nivel={n.carvoaria}
           saida={{
@@ -143,6 +145,7 @@ function Producao() {
 
         <StationCard
           nome="Fornalha"
+          visual="fornalha"
           sprite="fornalha"
           animada
           nivel={n.fornalha}

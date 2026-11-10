@@ -19,6 +19,7 @@ import { formatar, formatarDuracao } from '../game/format.ts'
 import { DEF_CLASSE, acharHeroi, emExpedicao, poderHeroi, type Heroi } from '../game/herois.ts'
 import { useGame } from '../store.ts'
 import { Sprite } from './Sprite.tsx'
+import { SpriteHeroi } from './SpritesEvolucao.tsx'
 
 const pct = (p: number) => `${Math.round(p * 100)} %`
 
@@ -37,7 +38,11 @@ function LinhaAndamento({ e }: { e: Expedicao }) {
 
   return (
     <li className={`andamento ${chegou ? (e.sucesso ? 'pronto' : 'falhou') : 'quente'}`} aria-label={chegou ? `${nome} voltou de ${def.nome}` : `${nome} em ${def.nome}`}>
-      <Sprite nome={chegou ? `heroi_${classe}` : `heroi_${classe}_andando`} escala={2} fps={5} />
+      {heroi ? (
+        <SpriteHeroi heroi={heroi} andando={!chegou} escala={2} fps={5} />
+      ) : (
+        <Sprite nome={chegou ? `heroi_${classe}` : `heroi_${classe}_andando`} escala={2} fps={5} />
+      )}
       <div className="andamento-texto">
         <span className="andamento-titulo">
           {nome} · {def.nome}
@@ -165,7 +170,7 @@ function CartaoChefe({ chefe }: { chefe: ChefeId }) {
               return (
                 <label key={h.id} className={`equipe-membro ${marcado ? 'marcado' : ''} ${ocupado ? 'ocupado' : ''}`}>
                   <input type="checkbox" checked={marcado} disabled={ocupado} onChange={() => alternar(h.id)} />
-                  <Sprite nome={`heroi_${h.classe}`} escala={2} />
+                  <SpriteHeroi heroi={h} escala={2} />
                   <span>
                     {h.nome}
                     <small>{ocupado ? 'fora' : `nível ${h.nivel}`}</small>
@@ -223,7 +228,7 @@ function Viajantes({ regiao }: { regiao: RegiaoId }) {
             className={`viajante ${ida || chegou ? '' : 'voltando'}`}
             style={{ left: `${pos * 100}%`, bottom: `${4 + (i % 2) * 8}px` }}
           >
-            <Sprite nome={chegou ? `heroi_${h.classe}` : `heroi_${h.classe}_andando`} escala={2} fps={6} />
+            <SpriteHeroi heroi={h} andando={!chegou} escala={2} fps={6} />
           </div>
         )
       })}
@@ -289,7 +294,7 @@ export function MapaScreen() {
                 className={`escolha ${heroi?.id === h.id ? 'marcada' : ''}`}
                 onClick={() => setEscolhido(h.id)}
               >
-                <Sprite nome={`heroi_${h.classe}`} escala={2} />
+                <SpriteHeroi heroi={h} escala={2} />
                 <span>{h.nome}</span>
                 <small>poder {formatar(poderHeroi(h))}</small>
               </button>

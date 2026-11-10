@@ -19,6 +19,7 @@ import { Dica } from './Dica.tsx'
 import { EquiparSheet } from './EquiparSheet.tsx'
 import { COR_QUALIDADE } from './qualidade.ts'
 import { Sprite } from './Sprite.tsx'
+import { SpriteHeroi } from './SpritesEvolucao.tsx'
 
 function CartaoHeroi({ heroi, onEquipar }: { heroi: Heroi; onEquipar: (id: number) => void }) {
   const agora = useGame((s) => s.jogo.lastTick)
@@ -42,12 +43,7 @@ function CartaoHeroi({ heroi, onEquipar }: { heroi: Heroi; onEquipar: (id: numbe
     <li className="heroi painel" aria-label={`${heroi.nome}, ${def.nome}, nível ${heroi.nivel}`}>
       <div className="heroi-topo">
         <div className="heroi-arte">
-          <Sprite
-            nome={expedicao && !voltouJa ? `heroi_${heroi.classe}_andando` : `heroi_${heroi.classe}`}
-            escala={3}
-            rotulo={`${heroi.nome}, ${def.nome}`}
-            fps={5}
-          />
+          <SpriteHeroi heroi={heroi} andando={!!expedicao && !voltouJa} escala={3} rotulo={`${heroi.nome}, ${def.nome}`} fps={5} />
         </div>
         <div className="heroi-texto">
           <h3>{heroi.nome}</h3>

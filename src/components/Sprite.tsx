@@ -5,6 +5,7 @@ import { FERREIROS, type FerreiroId } from '../game/ferreiros.ts'
 import { CLASSES, type ClasseId } from '../game/herois.ts'
 import { MATERIAIS, TIPOS_ITEM, type MaterialId, type TipoItem } from '../game/items.ts'
 import { RAMOS, type RamoId } from '../game/talentos.ts'
+import type { CamadaEstacao, CamadaHeroi } from '../game/visual.ts'
 
 export type SpriteNome =
   | `item_${TipoItem}_${MaterialId}`
@@ -37,6 +38,8 @@ export type SpriteNome =
   | 'regiao_serra'
   | 'cena_forja'
   | 'carrinho'
+  | CamadaEstacao
+  | CamadaHeroi
 
 interface Def {
   /** Largura e altura de UM quadro, em pixels nativos. */
@@ -48,7 +51,21 @@ interface Def {
   inicial: string
   /** Quadros padrão se o arquivo for uma faixa horizontal. */
   quadros?: number
+  /** Camada transparente por cima de outro sprite: sem arquivo, não desenha nada (nunca um quadrado). */
+  camada?: boolean
 }
+
+const CAMADAS_ESTACAO = Object.fromEntries(
+  (['mina', 'carvoaria', 'fornalha', 'bigorna'] as const).flatMap((e) =>
+    ([1, 2, 3, 4] as const).map((k) => [`${e}_e${k}`, { w: 32, h: 32, cor: '', texto: '', inicial: '', camada: true } satisfies Def]),
+  ),
+) as Record<CamadaEstacao, Def>
+
+const CAMADAS_HEROI = Object.fromEntries(
+  (['armadura', 'elmo', 'escudo', 'espada', 'machado'] as const).flatMap((p) =>
+    (['ferro', 'aco'] as const).map((m) => [`equip_${p}_${m}`, { w: 24, h: 24, cor: '', texto: '', inicial: '', camada: true } satisfies Def]),
+  ),
+) as Record<CamadaHeroi, Def>
 
 const COR_MATERIAL: Record<MaterialId, string> = { ferro: '#5b5662', aco: '#7d8aa0' }
 
@@ -115,6 +132,8 @@ const SPRITES_NPC = Object.fromEntries(
 ) as Record<`npc_${NpcId}`, Def>
 
 const SPRITES: Record<SpriteNome, Def> = {
+  ...CAMADAS_ESTACAO,
+  ...CAMADAS_HEROI,
   ...SPRITES_ITEM,
   ...SPRITES_NPC,
   ...SPRITES_CONSTRUCAO,
@@ -221,6 +240,9 @@ export function Sprite({ nome, escala = 2, quadros, fps = 6, rotulo }: Props) {
     } as CSSProperties
     return <div className="sprite sprite-faixa" style={estilo} {...a11y} />
   }
+
+  // Camada sem arquivo (ou ainda carregando): nada, para não cobrir a arte de baixo.
+  if (def.camada) return null
 
   // Carregando ou arquivo ausente: quadrado com a cor da paleta e a inicial.
   const estilo: CSSProperties = {

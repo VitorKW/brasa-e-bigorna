@@ -7,6 +7,7 @@ import type { AlvoToque } from '../game/toque.ts'
 import { useGame } from '../store.ts'
 import { Dica } from './Dica.tsx'
 import { Sprite, type SpriteNome } from './Sprite.tsx'
+import { SpriteEstacao } from './SpritesEvolucao.tsx'
 
 /** Tamanho nativo da cena (pixels da arte). O palco é escalado para caber na largura da tela. */
 const W = 176
@@ -150,7 +151,7 @@ export function CenaForja() {
                 }}
                 aria-label={trancada ? `${p.nome}: ainda não construída` : `Tocar na ${p.nome.toLowerCase()}`}
               >
-                <Sprite nome={sprite} escala={1} fps={martelando && p.alvo === 'bigorna' ? 8 : 6} />
+                <SpriteEstacao estacao={p.alvo} nivel={jogo.niveis[p.alvo]} base={sprite} escala={1} fps={martelando && p.alvo === 'bigorna' ? 8 : 6} />
               </button>
             )
           })}

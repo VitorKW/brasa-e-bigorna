@@ -497,3 +497,21 @@ describe('cena viva da forja', () => {
     expect(saida).toContain('cena-ferreiro')
   })
 })
+
+describe('evolução visível', () => {
+  it('a estação troca de nome a cada marco e avisa o próximo', () => {
+    const s = estadoInicial(0)
+    comEstado({ ...s, niveis: { ...s.niveis, mina: 12, carvoaria: 30, fornalha: 100 } }, { subForja: 'producao' })
+    const saida = renderToString(<ForgeScreen />)
+    expect(saida).toContain('Mina escorada')
+    expect(saida).toContain('Carvoaria cintada')
+    expect(saida).toContain('Alto-forno')
+    expect(saida).toContain('Nível 25: produção x2 e melhoria visual.')
+  })
+
+  it('a bigorna também evolui de nome', () => {
+    const s = estadoInicial(0)
+    comEstado({ ...s, niveis: { ...s.niveis, bigorna: 50 } }, { subForja: 'bigorna' })
+    expect(renderToString(<ForgeScreen />)).toContain('Bigorna de pedra')
+  })
+})

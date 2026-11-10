@@ -26,6 +26,8 @@ import {
 import { useGame } from '../store.ts'
 import { Flutuantes, useFlutuantes } from './Flutuantes.tsx'
 import { Sprite } from './Sprite.tsx'
+import { SpriteEstacao } from './SpritesEvolucao.tsx'
+import { nomeEstagio } from '../game/visual.ts'
 
 const TEXTO_BLOQUEIO: Record<MotivoBloqueio, string> = {
   bloqueada: '',
@@ -133,13 +135,13 @@ export function BigornaCard() {
   return (
     <article className={`estacao painel bigorna ${trabalhando ? 'quente' : 'fria'}`} aria-label="Bigorna">
       <div className="estacao-arte">
-        <Sprite nome={trabalhando ? 'bigorna_batendo' : 'bigorna'} escala={2} rotulo="Bigorna" fps={4} />
+        <SpriteEstacao estacao="bigorna" nivel={nivel} base={trabalhando ? 'bigorna_batendo' : 'bigorna'} escala={2} fps={4} rotulo={nomeEstagio('bigorna', nivel)} />
         {faiscas !== null && <Faiscas key={faiscas} />}
       </div>
 
       <div className="estacao-info">
         <div className="estacao-titulo">
-          <h2>Bigorna</h2>
+          <h2>{nomeEstagio('bigorna', nivel)}</h2>
           <span className="nivel">nível {nivel}</span>
         </div>
         <div className="estacao-taxa bigorna-feedback">

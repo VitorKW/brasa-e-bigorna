@@ -5,6 +5,7 @@ import { formatar } from '../game/format.ts'
 import { nomeItem, nomeQualidade } from '../game/items.ts'
 import { useGame, type CombateAtivo } from '../store.ts'
 import { Sprite } from './Sprite.tsx'
+import { SpriteHeroi } from './SpritesEvolucao.tsx'
 
 /** O replay inteiro dura cerca de 6 s, não importa quantos golpes teve o combate. */
 export const DURACAO_REPLAY_MS = 6000
@@ -29,6 +30,8 @@ function Lutador({
   idx: number
 }) {
   const caido = pv <= 0
+  // O herói luta vestido com o que tem: o mesmo kit que aparece na Guilda.
+  const heroi = useGame((s) => s.jogo.herois.find((h) => `h${h.id}` === c.id))
   const pct = Math.max(0, Math.min(100, (pv / c.pvMax) * 100))
   const levou = ultimo?.alvo === c.id
   return (
@@ -37,7 +40,11 @@ function Lutador({
         {c.lado === 'chefe' ? (
           <Sprite nome={c.id === 'serpe' ? 'chefe_serpe' : 'chefe_golem'} escala={3} rotulo={c.nome} />
         ) : (
-          <Sprite nome={caido ? `heroi_${c.classe!}` : `heroi_${c.classe!}_andando`} escala={3} rotulo={c.nome} fps={5} />
+          heroi ? (
+            <SpriteHeroi heroi={heroi} andando={!caido} escala={3} rotulo={c.nome} fps={5} />
+          ) : (
+            <Sprite nome={caido ? `heroi_${c.classe!}` : `heroi_${c.classe!}_andando`} escala={3} rotulo={c.nome} fps={5} />
+          )
         )}
         {levou && (
           <span key={idx} className="dano-numero" aria-hidden="true">

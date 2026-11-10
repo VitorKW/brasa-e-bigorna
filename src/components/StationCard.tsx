@@ -3,6 +3,8 @@ import { NIVEIS_MARCO } from '../game/constants.ts'
 import { formatar, formatarCusto, formatarTaxa } from '../game/format.ts'
 import { Flutuantes, useFlutuantes } from './Flutuantes.tsx'
 import { Sprite, type SpriteNome } from './Sprite.tsx'
+import { SpriteEstacao } from './SpritesEvolucao.tsx'
+import { nomeEstagio, type EstacaoVisual } from '../game/visual.ts'
 
 interface Props {
   nome: string
@@ -22,6 +24,8 @@ interface Props {
   parada: boolean
   mensagemParada?: string
   gargalo: boolean
+  /** Estação com estágios visuais (muda de cara e de nome a cada marco). */
+  visual?: EstacaoVisual
 }
 
 export function StationCard(p: Props) {
@@ -33,7 +37,8 @@ export function StationCard(p: Props) {
   useEffect(() => {
     if (p.nivel > nivelAntes.current) {
       const marco = (NIVEIS_MARCO as readonly number[]).includes(p.nivel)
-      setSubiu({ id: p.nivel, texto: marco ? 'Produção x2!' : `Nível ${p.nivel}`, marco })
+      const novoNome = p.visual ? nomeEstagio(p.visual, p.nivel) : null
+      setSubiu({ id: p.nivel, texto: marco ? (novoNome ? `${novoNome}! Produção x2` : 'Produção x2!') : `Nível ${p.nivel}`, marco })
     }
     nivelAntes.current = p.nivel
   }, [p.nivel])
@@ -50,6 +55,7 @@ export function StationCard(p: Props) {
   }, [p.parada, p.saida.porSegundo, adicionar])
 
   const spriteAtual: SpriteNome = p.animada && !p.parada ? (p.spriteAceso ?? 'fornalha_acesa') : p.sprite
+  const titulo = p.visual ? nomeEstagio(p.visual, p.nivel) : p.nome
   const classe = ['estacao', 'painel', p.parada ? 'fria' : 'quente', p.gargalo ? 'gargalo' : '']
     .filter(Boolean)
     .join(' ')
@@ -67,12 +73,16 @@ export function StationCard(p: Props) {
         </span>
       )}
       <div className="estacao-arte">
-        <Sprite nome={spriteAtual} escala={2} rotulo={p.nome} />
+        {p.visual ? (
+          <SpriteEstacao estacao={p.visual} nivel={p.nivel} base={spriteAtual} escala={2} rotulo={titulo} />
+        ) : (
+          <Sprite nome={spriteAtual} escala={2} rotulo={p.nome} />
+        )}
       </div>
 
       <div className="estacao-info">
         <div className="estacao-titulo">
-          <h2>{p.nome}</h2>
+          <h2>{titulo}</h2>
           <span className="nivel">nível {p.nivel}</span>
           {p.gargalo && <span className="etiqueta-gargalo">gargalo</span>}
         </div>
@@ -85,8 +95,8 @@ export function StationCard(p: Props) {
         </div>
         {/* Só o que pede ação: parada. O "próximo X/s" polui e não muda a decisão (o botão já diz o preço). */}
         {p.parada && <p className="estacao-aviso">{p.mensagemParada}</p>}
-        {!p.parada && p.proximoMarco !== null && p.proximoMarco - p.nivel <= 5 && (
-          <p className="estacao-dica">Dobra a produção no nível {p.proximoMarco}.</p>
+        {!p.parada && p.proximoMarco !== null && (
+          <p className="estacao-dica">{`Nível ${p.proximoMarco}: produção x2${p.visual ? ' e melhoria visual' : ''}.`}</p>
         )}
       </div>
 

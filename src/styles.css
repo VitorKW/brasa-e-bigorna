@@ -2945,3 +2945,69 @@ p {
     transition: none;
   }
 }
+
+/* Fatia 7: arte em camadas (estágios das estações e equipamento nos heróis). */
+.sprite-pilha {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
+
+.sprite-camada {
+  position: absolute;
+  left: 0;
+  top: 0;
+  line-height: 0;
+  pointer-events: none;
+}
+
+.sprite-pilha.aura {
+  filter: drop-shadow(0 0 3px var(--aura)) drop-shadow(0 0 1px var(--aura));
+}
+
+.sprite-pilha.aura-lendario {
+  animation: aura-pulsa 2.4s ease-in-out infinite;
+}
+
+@keyframes aura-pulsa {
+  0%, 100% { filter: drop-shadow(0 0 3px var(--aura)) drop-shadow(0 0 1px var(--aura)); }
+  50% { filter: drop-shadow(0 0 6px var(--aura)) drop-shadow(0 0 1px var(--aura)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sprite-pilha.aura-lendario {
+    animation: none;
+  }
+}
+
+/* Equipar: retrato do herói vestido, que brilha ao trocar de peça. */
+.equipar-topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.equipar-retrato {
+  flex: none;
+  padding: 4px;
+  background: var(--carvao);
+  border: 1px solid var(--aco);
+  border-radius: var(--raio);
+  line-height: 0;
+}
+
+.equipar-retrato.vestiu {
+  animation: vestiu 0.45s ease-out;
+}
+
+@keyframes vestiu {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 212, 122, 0.9); }
+  35% { transform: scale(1.08); }
+  100% { transform: scale(1); box-shadow: 0 0 0 12px rgba(255, 212, 122, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .equipar-retrato.vestiu {
+    animation: none;
+  }
+}

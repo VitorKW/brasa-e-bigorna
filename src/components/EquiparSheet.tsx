@@ -15,6 +15,8 @@ import { useGame } from '../store.ts'
 import { Diferenca, GradeAtributos, textoAtributosItem } from './Atributos.tsx'
 import { COR_QUALIDADE } from './qualidade.ts'
 import { Sprite } from './Sprite.tsx'
+import { SpriteHeroi } from './SpritesEvolucao.tsx'
+import { camadasHeroi } from '../game/visual.ts'
 
 function LinhaItem({ item, children }: { item: Item; children: ReactNode }) {
   const cor = COR_QUALIDADE[item.qualidade]
@@ -65,7 +67,13 @@ export function EquiparSheet({ heroiId, onFechar }: { heroiId: number; onFechar:
   return (
     <div className="modal-fundo" onClick={(e) => e.target === e.currentTarget && onFechar()}>
       <div className="modal painel" role="dialog" aria-modal="true" aria-labelledby="titulo-equipar">
-        <h2 id="titulo-equipar">Equipar {heroi.nome}</h2>
+        <div className="equipar-topo">
+          {/* O herói vestido, ao vivo: troca de peça = troca na arte, com um brilho rápido. */}
+          <span key={camadasHeroi(heroi).join('|')} className="equipar-retrato vestiu">
+            <SpriteHeroi heroi={heroi} escala={4} rotulo={`${heroi.nome} com o equipamento atual`} />
+          </span>
+          <h2 id="titulo-equipar">Equipar {heroi.nome}</h2>
+        </div>
         <GradeAtributos a={atributosHeroi(heroi)} rotulo={`Atributos de ${heroi.nome}`} />
         {ocupado && <p className="estacao-aviso">Em expedição: o equipamento só muda quando ele voltar e o loot for coletado.</p>}
 
